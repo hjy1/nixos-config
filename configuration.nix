@@ -13,13 +13,23 @@
 
   # GC, boot-entry pruning and filesystem upkeep live in modules/maintenance.nix
 
-  # This host has no swap partition (swapDevices = [ ] in the hardware file).
-  # zram gives you compressed swap in RAM, which is what keeps a big build -
-  # the CUDA toolchain, say - from being OOM-killed outright.
+  # No swap partition on this host (swapDevices = [ ] in the hardware file),
+  # and none wanted: hibernation is the only thing that requires disk swap,
+  # and it needs a swap area >= RAM (60GiB+ here) to be useful.
+  #
+  # zram is a compressed block device in RAM used as swap. With 60GiB there is
+  # no capacity argument for it - the point is giving the kernel somewhere to
+  # put genuinely cold anonymous pages, so reclaim has a cheap option other
+  # than dropping page cache or invoking the OOM killer.
+  #
+  # memoryPercent is the device's *uncompressed capacity*, not RAM consumed -
+  # at roughly 3:1 zstd, 25% of 60GiB holds ~15GiB of pages for ~5GiB of real
+  # memory. Generous at this RAM size; the module default of 50 is sized for
+  # much smaller machines.
   zramSwap = {
     enable = true;
     algorithm = "zstd";
-    memoryPercent = 50;
+    memoryPercent = 25;
   };
 
   # Microcode and device firmware blobs. The hardware file references this

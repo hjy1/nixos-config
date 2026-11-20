@@ -25,9 +25,33 @@
       );
     in
     {
-      # Re-exported so install.sh runs the disko pinned in our flake.lock
-      # rather than whatever is latest on GitHub today.
       packages.${system}.disko = disko.packages.${system}.disko;
+
+      # CUDA toolchain on demand instead of in the system closure.
+      #   nix develop ~/nixos-config#cuda
+      # or in a project:  echo 'use flake ~/nixos-config#cuda' > .envrc
+      devShells.${system}.cuda =
+        let
+          pkgs = import nixpkgs {
+            inherit system;
+            config.allowUnfree = true;
+          };
+        in
+        pkgs.mkShell {
+          packages = with pkgs; [
+            cudaPackages.cudatoolkit
+            cudaPackages.cuda_cudart
+            cmake
+            ninja
+            gcc
+            uv
+            python3
+          ];
+          shellHook = ''
+            export CUDA_PATH=${pkgs.cudaPackages.cudatoolkit}
+            echo "cuda devshell: $(nvcc --version | tail -1)"
+          '';
+        };
 
       nixosConfigurations = lib.genAttrs hostNames (name:
         nixpkgs.lib.nixosSystem {

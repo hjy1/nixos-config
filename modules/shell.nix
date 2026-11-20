@@ -39,8 +39,6 @@
       ll = "eza -l --git --group-directories-first";
       la = "eza -la --git --group-directories-first";
       lt = "eza --tree --level=2";
-      cat = "bat --paging=never";
-      less = "bat";
 
       # This config. `nrs` is the one you'll type most.
       nrs = "sudo nixos-rebuild switch --flake ~/nixos-config";

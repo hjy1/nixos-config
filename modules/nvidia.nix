@@ -47,11 +47,23 @@
   # Load nvidia early so you get KMS from boot rather than a mode switch.
   boot.initrd.kernelModules = [ "nvidia" ];
 
-  # CUDA toolkit (cuda-merged-13.5). This is a multi-GB closure.
   environment.systemPackages = with pkgs; [
-    cudaPackages.cudatoolkit
-    nvtopPackages.full
+    nvtopPackages.full   # GPU monitor; small, genuinely wants to be global
   ];
+
+  # The CUDA *toolkit* (nvcc, headers, cuda-merged-13.5 - multi-GB) is
+  # deliberately NOT here. It would sit in every generation and be retained
+  # by GC for 30 days.
+  #
+  # Note what you still get system-wide: the NVIDIA driver ships libcuda.so,
+  # the CUDA *runtime*. So prebuilt CUDA binaries - PyTorch wheels, llama.cpp
+  # releases, anything that dlopens libcuda - work fine without the toolkit.
+  # Only *compiling* .cu source needs nvcc.
+  #
+  # For that, use the devShell in this flake:
+  #     nix develop ~/nixos-config#cuda
+  # or per-project, which is the better habit:
+  #     echo 'use flake ~/nixos-config#cuda' > .envrc && direnv allow
 
   # DELIBERATELY NOT SET:
   #   nixpkgs.config.cudaSupport = true;
