@@ -86,31 +86,44 @@ sudo nixos-rebuild switch --flake .#<name>
 
 The installer handles partitioning and your user password. Nothing else needed.
 
-### Declarative route: install from the ISO with disko
+### Declarative route: install from the ISO with `install.sh`
 
 ```bash
-export NIX_CONFIG="experimental-features = nix-command flakes"
-nix-shell -p git
-git clone https://github.com/joure5501/nixos-config ~/cfg && cd ~/cfg
+# 1. get the repo
+nix-shell -p git --run 'git clone https://github.com/joure5501/nixos-config /tmp/cfg'
 
-lsblk                                     # identify the TARGET disk
-mkdir -p hosts/<name>
-cp hosts/_template/disk.nix hosts/<name>/disk.nix
-$EDITOR hosts/<name>/disk.nix             # set `device`
-$EDITOR flake.nix                         # uncomment + rename the template block
+# 2. hardware: partition the disk, probe the machine   [DESTRUCTIVE, once ever]
+lsblk                                      # identify the TARGET disk
+sudo /tmp/cfg/install.sh prepare laptop /dev/nvme0n1
 
-# !! DESTRUCTIVE - wipes the named disk, no prompt. Re-read `device` first. !!
-sudo env NIX_CONFIG="experimental-features = nix-command flakes" \
-  nix run github:nix-community/disko -- \
-  --mode destroy,format,mount ~/cfg/hosts/<name>/disk.nix
-
-# --no-filesystems because disko already declares every fileSystems.* entry
-sudo nixos-generate-config --root /mnt --no-filesystems
-cp /mnt/etc/nixos/hardware-configuration.nix hosts/<name>/
-
-git add -A                                # new files are INVISIBLE to the flake until staged
-sudo nixos-install --flake ~/cfg#<name>   # prompts for the ROOT password at the end
+# 3. software: build and install the configuration     [repeatable, safe]
+sudo /tmp/cfg/install.sh apply laptop
 ```
+
+The split is deliberate. `prepare` is destructive, specific to one physical
+machine, and happens exactly once in that machine's life. `apply` is
+declarative and re-runnable — it is the same operation `nixos-rebuild switch`
+performs for the rest of the machine's life.
+
+Between the two, review what `prepare` generated:
+
+| File | Edit it to |
+|---|---|
+| `hosts/<name>/default.nix` | pick which modules this machine gets |
+| `hosts/<name>/hardware-configuration.nix` | usually leave alone |
+| `hosts/<name>/disk.nix` | already points at your disk |
+
+`modules/nvidia.nix` is commented out in the template — it drags in a
+multi-GB CUDA closure. Uncomment only on a machine with an NVIDIA GPU.
+
+If you reboot the ISO mid-install, `/mnt` is no longer mounted. Remount
+without destroying anything:
+
+```bash
+sudo /tmp/cfg/install.sh mount laptop
+```
+
+`install.sh --help` prints all of this.
 
 ### PASSWORDS - do not skip this
 
