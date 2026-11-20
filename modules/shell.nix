@@ -15,6 +15,8 @@
     syntaxHighlighting.enable = true;
 
     histSize = 50000;
+    # zsh does NOT create the parent directory for histFile - without the
+    # tmpfiles rule below, history silently fails to persist.
     histFile = "$HOME/.local/share/zsh/history";
 
     setOptions = [
@@ -70,6 +72,11 @@
   };
 
   users.defaultUserShell = pkgs.zsh;
+
+  # Create the history directory. %h expands to each user's home.
+  systemd.user.tmpfiles.rules = [
+    "d %h/.local/share/zsh 0700 - - -"
+  ];
 
   programs.starship = {
     enable = true;

@@ -9,6 +9,7 @@
     ../../modules/desktop.nix
     ../../modules/packages.nix
     ../../modules/shell.nix
+    ../../modules/defaults.nix
     ../../modules/gaming.nix
   ];
 }

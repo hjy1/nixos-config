@@ -71,8 +71,6 @@
     extraGroups = [ "networkmanager" "wheel" ];
   };
 
-  programs.firefox.enable = true;
-
   # vscode, nvidia drivers, steam, bilibili and CUDA are all unfree.
   nixpkgs.config.allowUnfree = true;
 
