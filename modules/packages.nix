@@ -19,6 +19,12 @@
     vimAlias = true;
   };
 
+  # NixOS has no /lib, so prebuilt binaries that expect a normal FHS layout
+  # fail with cryptic loader errors. nix-ld provides a shim. In practice this
+  # is what makes VSCode extensions, bundled language servers, and pip wheels
+  # work instead of silently dying.
+  programs.nix-ld.enable = true;
+
   environment.systemPackages = with pkgs; [
     # Editors / tooling
     vim

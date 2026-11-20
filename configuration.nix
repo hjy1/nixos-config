@@ -11,13 +11,20 @@
   # Flakes need these enabled to build the system at all.
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
 
-  # Keep the store from growing without bound.
-  nix.gc = {
-    automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 30d";
+  # GC, boot-entry pruning and filesystem upkeep live in modules/maintenance.nix
+
+  # This host has no swap partition (swapDevices = [ ] in the hardware file).
+  # zram gives you compressed swap in RAM, which is what keeps a big build -
+  # the CUDA toolchain, say - from being OOM-killed outright.
+  zramSwap = {
+    enable = true;
+    algorithm = "zstd";
+    memoryPercent = 50;
   };
-  nix.settings.auto-optimise-store = true;
+
+  # Microcode and device firmware blobs. The hardware file references this
+  # via mkDefault for AMD microcode but never turns it on.
+  hardware.enableRedistributableFirmware = true;
 
   # Networking
   # NOTE: left as "nixos" so nothing you didn't ask for changes. The flake

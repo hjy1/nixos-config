@@ -23,6 +23,12 @@
     wantedBy = [ "graphical-session.target" ];
   };
 
+  # Make Electron/Chromium apps run as native Wayland clients instead of
+  # going through XWayland. Without this, VSCode and bilibili (both Electron)
+  # render blurry on HiDPI, ignore fractional scaling, and have worse input
+  # latency under niri. Single highest-value line in this file.
+  environment.sessionVariables.NIXOS_OZONE_WL = "1";
+
   environment.systemPackages = with pkgs; [
     dux-shell
     quickshell          # the QML runtime DMS is built on
