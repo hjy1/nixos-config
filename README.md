@@ -86,63 +86,101 @@ sudo nixos-rebuild switch --flake .#<name>
 
 The installer handles partitioning and your user password. Nothing else needed.
 
-### Declarative route: install from the ISO with `install.sh`
+### Declarative route: `nixos-anywhere`
+
+You run this **from this machine**, pushing a system onto the target over SSH.
+The target never clones this repo and never needs git — the flake is evaluated
+and built here, then the closure is copied across.
+
+**On the target machine:** boot any NixOS ISO, then
 
 ```bash
-# 1. get the repo
-nix-shell -p git --run 'git clone https://github.com/joure5501/nixos-config /tmp/cfg'
-
-# 2. hardware: partition the disk, probe the machine   [DESTRUCTIVE, once ever]
-lsblk                                      # identify the TARGET disk
-sudo /tmp/cfg/install.sh prepare laptop /dev/nvme0n1
-
-# 3. software: build and install the configuration     [repeatable, safe]
-sudo /tmp/cfg/install.sh apply laptop
+sudo passwd root       # nixos-anywhere needs root SSH access
+ip -brief addr         # note the IP
 ```
 
-The split is deliberate. `prepare` is destructive, specific to one physical
-machine, and happens exactly once in that machine's life. `apply` is
-declarative and re-runnable — it is the same operation `nixos-rebuild switch`
-performs for the rest of the machine's life.
-
-Between the two, review what `prepare` generated:
-
-| File | Edit it to |
-|---|---|
-| `hosts/<name>/default.nix` | pick which modules this machine gets |
-| `hosts/<name>/hardware-configuration.nix` | usually leave alone |
-| `hosts/<name>/disk.nix` | already points at your disk |
-
-`modules/nvidia.nix` is commented out in the template — it drags in a
-multi-GB CUDA closure. Uncomment only on a machine with an NVIDIA GPU.
-
-If you reboot the ISO mid-install, `/mnt` is no longer mounted. Remount
-without destroying anything:
+**Here:** create the host, two small files.
 
 ```bash
-sudo /tmp/cfg/install.sh mount laptop
+mkdir -p hosts/laptop
+cp hosts/_template/{default.nix,disk.nix,hardware-configuration.nix} hosts/laptop/
+$EDITOR hosts/laptop/disk.nix       # set `device` to the target's disk
+$EDITOR hosts/laptop/default.nix    # pick modules (nvidia is off by default)
+git add -A                          # new files are invisible to the flake until staged
 ```
 
-`install.sh --help` prints all of this.
+Optional but recommended — test the disk layout in a VM, touching no hardware:
+
+```bash
+nix run github:nix-community/nixos-anywhere -- --flake .#laptop --vm-test
+```
+
+Then install:
+
+```bash
+nix run github:nix-community/nixos-anywhere -- \
+  --flake .#laptop \
+  --generate-hardware-config nixos-generate-config ./hosts/laptop/hardware-configuration.nix \
+  --target-host root@192.168.1.50
+```
+
+`--generate-hardware-config` probes the target and writes the real hardware
+scan back into this repo, replacing the placeholder. Commit it afterwards.
+
+Default phases are `kexec,disko,install,reboot` — pass `--phases` to run a
+subset. `--build-on remote` builds on the target instead of here, useful if the
+target is beefier or you're on a slow uplink.
+
+The `hosts/_template/hardware-configuration.nix` placeholder exists because the
+disko phase has to evaluate `nixosConfigurations.laptop` before the target has
+been probed. It gets overwritten; don't bother editing it.
+
+`modules/nvidia.nix` is commented out in the template — it drags in a multi-GB
+CUDA closure. Uncomment only on a machine with an NVIDIA GPU.
 
 ### PASSWORDS - do not skip this
 
-`nixos-install` sets a password for **root only**. The user `he` is declared with
-no password, and in NixOS that means login is *disabled*, not blank. You will
-reach GDM and find no password works for `he`.
+A user declared with no password has login **disabled**, not blank. `he` has no
+password in `configuration.nix`, so without one of the fixes below you reach GDM
+and find that nothing works.
 
-Set it before rebooting, while still in the installer:
+**With the graphical installer** this is handled — it asks you for a user
+password during setup.
+
+**With nixos-anywhere it is not.** The install is fully non-interactive: nothing
+prompts, and root gets no password either. Decide before you install:
+
+*Option A - declare a hash (simplest).* Generate one and put it in
+`hosts/<name>/default.nix`:
 
 ```bash
-sudo nixos-enter --root /mnt -c 'passwd he'
+mkpasswd -m yescrypt          # paste the output below
 ```
 
-Already rebooted? At the GDM screen hit Ctrl+Alt+F2, log in as `root` with the
-install password, run `passwd he`, then Ctrl+Alt+F1.
+```nix
+users.users.he.initialHashedPassword = "$y$j9T$...";
+```
+
+A yescrypt hash is not plaintext, but on a **public** repo it is still offline-
+crackable. Use a throwaway, change it on first login, and move real secrets to
+`sops-nix`/`agenix` later.
+
+*Option B - SSH key instead.* Declare your public key and log in over SSH,
+then `passwd` yourself:
+
+```nix
+users.users.he.openssh.authorizedKeys.keys = [ "ssh-ed25519 AAAA..." ];
+services.openssh.enable = true;
+```
+
+*Recovering a machine you already locked yourself out of:* boot it, press
+Ctrl+Alt+F2 at the login screen, and if root has no password either, reboot
+picking an older generation or re-run the install with Option A in place.
 
 `users.mutableUsers` is `true` here, so a password set with `passwd` persists
-across rebuilds. Never set `mutableUsers = false` without also setting
-`users.users.he.hashedPassword`, or every rebuild will lock you out.
+across rebuilds, and `initialHashedPassword` applies only on first activation.
+Never set `mutableUsers = false` without also setting `hashedPassword`, or every
+rebuild will lock you out.
 
 `configuration.nix` is written to be host-agnostic; keep it that way. Per-machine
 things belong in `hosts/<name>/`.
