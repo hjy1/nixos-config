@@ -73,9 +73,11 @@
     "d %h/.local/share/zsh 0700 - - -"
     "d %h/.config/zsh      0755 - - -"
     "d %h/.config/niri     0755 - - -"
+    "d %h/.config/ghostty  0755 - - -"
     "L %h/.config/zsh/local.zsh    - - - - %h/nixos-config/dotfiles/zsh/local.zsh"
     "L %h/.config/starship.toml    - - - - %h/nixos-config/dotfiles/starship.toml"
     "L %h/.config/niri/config.kdl  - - - - %h/nixos-config/dotfiles/niri/config.kdl"
+    "L %h/.config/ghostty/config   - - - - %h/nixos-config/dotfiles/ghostty/config"
   ];
 
   # enable only - NO `settings`. Declaring the prompt here would mean a

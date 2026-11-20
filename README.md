@@ -68,6 +68,37 @@ every time they hit "save":
 **Credentials.** Never commit these: `~/.config/gh`, SSH private keys, API
 tokens. Use `sops-nix`/`agenix` if a secret must be declared.
 
+**Assets — wallpapers, and anything binary.** Keep these in `~/Pictures/`,
+not in this repo and not in the Nix store. Three reasons:
+
+1. Git history is forever. A 10MB wallpaper you delete next week still lives
+   in every future clone.
+2. Every generation would retain it in the store, and GC holds generations
+   for 30 days.
+3. Changing your wallpaper would require a rebuild — absurd.
+
+DMS and matugen take a *path*. Point them at `~/Pictures/wallpapers/` and let
+them read a plain mutable file.
+
+The same split applies to themes: **the package** (an icon theme, a cursor
+theme, a font) is Tier 1 because it must exist to be selectable. **The
+selection** is Tier 2 or 3, because it's taste.
+
+`modules/fonts.nix` is the clearest example — which fonts are installed is
+declarative; which font Ghostty uses lives in `dotfiles/ghostty/config`.
+
+### A note on sudo
+
+Tier 1 needs `sudo` because it activates a system profile — that's inherent,
+not a Nix quirk. Tier 2 never does: the files are yours, and the apps reload
+them live. That's the real reason the split matters day to day.
+
+If you want *declarative* user config **without** sudo, that is what
+home-manager in **standalone** mode gives you (`home-manager switch`, no
+root, rebuilds only your user generation in seconds). Note the trap: wiring
+home-manager in as a NixOS module puts it back behind `sudo nixos-rebuild`.
+Standalone is the mode that solves this problem; the module is not.
+
 ### When unsure
 
 Start in `dotfiles/`. Promote to Nix only once you're sure it must be
