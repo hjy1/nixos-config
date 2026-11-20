@@ -7,10 +7,10 @@ nixpkgs commit so this reproduces identically on any machine.
 
 | Path | Purpose |
 |---|---|
-| `flake.nix` | Inputs (nixpkgs-unstable) and the `mg1` host output |
+| `flake.nix` | Inputs (nixpkgs-unstable) and the `gear` host output |
 | `flake.lock` | Exact commit pins — **commit this** |
 | `configuration.nix` | Portable base system |
-| `hosts/mg1/hardware-configuration.nix` | Machine-specific. Regenerate per machine. |
+| `hosts/gear/hardware-configuration.nix` | Machine-specific. Regenerate per machine. |
 | `modules/nvidia.nix` | RTX 50-series drivers + CUDA |
 | `modules/desktop.nix` | niri + Dux Shell, GNOME fallback |
 | `modules/packages.nix` | General software |
@@ -27,11 +27,11 @@ Chicken-and-egg; it bites everyone once.
 
 ```bash
 # 1. Build without activating — catches problems while GNOME still works
-sudo nixos-rebuild build --flake ~/nixos-config#mg1 \
+sudo nixos-rebuild build --flake ~/nixos-config#gear \
   --option extra-experimental-features "nix-command flakes"
 
 # 2. Activate
-sudo nixos-rebuild switch --flake ~/nixos-config#mg1 \
+sudo nixos-rebuild switch --flake ~/nixos-config#gear \
   --option extra-experimental-features "nix-command flakes"
 
 # 3. Reboot (required: the NVIDIA kernel module swap won't take live)
@@ -41,7 +41,7 @@ sudo reboot
 Every rebuild after that needs no flag, because the built system now sets it:
 
 ```bash
-sudo nixos-rebuild switch --flake ~/nixos-config#mg1
+sudo nixos-rebuild switch --flake ~/nixos-config#gear
 ```
 
 At the GDM login screen pick **niri** (it's the default) or **GNOME** (fallback).
@@ -189,7 +189,7 @@ things belong in `hosts/<name>/`.
 
 ```bash
 nix flake update                                      # move nixpkgs forward
-sudo nixos-rebuild switch --flake ~/nixos-config#mg1
+sudo nixos-rebuild switch --flake ~/nixos-config#gear
 ```
 
 Because `flake.lock` is committed, `git log flake.lock` is a full history of

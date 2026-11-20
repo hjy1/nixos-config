@@ -30,11 +30,18 @@
     powerManagement.enable = false;
     powerManagement.finegrained = false;
 
-    # 595.112.07. Blackwell has been supported since the 570 branch, so
-    # `production` is both new enough and better tested than `latest`
-    # (615.78.08). Switch to nvidiaPackages.latest only if you hit a bug
-    # with a known fix upstream.
-    package = config.boot.kernelPackages.nvidiaPackages.production;
+    # 615.78.08. The branches available are production/stable (595.112.07)
+    # and latest (615.78.08).
+    #
+    # `latest` is the right pick here specifically BECAUSE of the kernel: this
+    # host runs linuxPackages_latest (7.3.x), and the proprietary NVIDIA kernel
+    # module has to compile against it. A newer driver branch has seen newer
+    # kernels. Pairing the newest kernel with a conservative driver is the
+    # combination most likely to fail to build.
+    #
+    # If you ever drop to the default kernel (6.18.x), `production` becomes the
+    # safer choice again - the two settings should move together.
+    package = config.boot.kernelPackages.nvidiaPackages.latest;
   };
 
   # Load nvidia early so you get KMS from boot rather than a mode switch.

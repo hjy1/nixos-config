@@ -6,9 +6,8 @@
     enable = true;
     config = {
       init.defaultBranch = "main";
-      # Set these yourself:
-      # user.name = "Jiayou He";
-      # user.email = "you@example.com";
+      user.name = "Jiayou He";
+      user.email = "forever56946@gmail.com";
     };
   };
 

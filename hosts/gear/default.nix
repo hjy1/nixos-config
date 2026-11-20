@@ -1,4 +1,4 @@
-# MAINGEAR MG-1 MK.II - desktop, Ryzen iGPU + RTX 50-series, btrfs on NVMe.
+# gear - MAINGEAR MG-1 MK.II desktop, Ryzen iGPU + RTX 50-series, btrfs on NVMe.
 #
 # This host predates disko (it was installed with the graphical ISO), so it
 # keeps the generated hardware-configuration.nix and has no disk.nix.

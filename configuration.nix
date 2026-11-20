@@ -27,10 +27,7 @@
   hardware.enableRedistributableFirmware = true;
 
   # Networking
-  # NOTE: left as "nixos" so nothing you didn't ask for changes. The flake
-  # output is named `mg1` regardless, hence `--flake ~/nixos-config#mg1`.
-  # Set this to "mg1" if you'd rather the two match.
-  networking.hostName = "nixos";
+  networking.hostName = "gear";
   networking.networkmanager.enable = true;
 
   # Locale / time

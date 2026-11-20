@@ -43,8 +43,8 @@
       less = "bat";
 
       # This config. `nrs` is the one you'll type most.
-      nrs = "sudo nixos-rebuild switch --flake ~/nixos-config#mg1";
-      nrb = "sudo nixos-rebuild build  --flake ~/nixos-config#mg1";
+      nrs = "sudo nixos-rebuild switch --flake ~/nixos-config";
+      nrb = "sudo nixos-rebuild build  --flake ~/nixos-config";
       nfu = "cd ~/nixos-config && nix flake update";
       ngc = "sudo nix-collect-garbage --delete-older-than 30d";
     };
