@@ -34,18 +34,8 @@
     # starship owns the prompt, so drop the module's default prompt.
     promptInit = "";
 
-    shellAliases = {
-      ls = "eza --group-directories-first";
-      ll = "eza -l --git --group-directories-first";
-      la = "eza -la --git --group-directories-first";
-      lt = "eza --tree --level=2";
-
-      # This config. `nrs` is the one you'll type most.
-      nrs = "sudo nixos-rebuild switch --flake ~/nixos-config";
-      nrb = "sudo nixos-rebuild build  --flake ~/nixos-config";
-      nfu = "cd ~/nixos-config && nix flake update";
-      ngc = "sudo nix-collect-garbage --delete-older-than 30d";
-    };
+    # NO shellAliases here on purpose - aliases change on a whim and would
+    # cost a rebuild each time. They live in dotfiles/zsh/local.zsh.
 
     interactiveShellInit = ''
       # fzf-tab replaces zsh's completion menu with an fzf picker. It needs
@@ -55,46 +45,44 @@
       fi
       source ${pkgs.zsh-fzf-tab}/share/fzf-tab/fzf-tab.plugin.zsh
 
-      # Show a preview pane when completing paths.
-      zstyle ':fzf-tab:complete:*:*' fzf-preview \
-        'if [[ -d $realpath ]]; then eza --tree --level=1 --color=always $realpath;
-         else bat --color=always --style=plain --line-range=:40 $realpath 2>/dev/null; fi'
-      zstyle ':fzf-tab:*' switch-group ',' '.'
-      zstyle ':completion:*' menu no          # required: fzf-tab draws its own
-      zstyle ':completion:*' list-colors "''${(s.:.)LS_COLORS}"
-      zstyle ':completion:*' matcher-list 'm:{a-zA-Z}={A-Za-z}'
+      # Required for fzf-tab to work at all - it draws its own menu. This is
+      # functional, not cosmetic, so it stays declarative.
+      zstyle ':completion:*' menu no
 
       # Sensible word boundaries for Ctrl-W.
       autoload -U select-word-style && select-word-style bash
+
+      # Everything mutable - aliases, fzf-tab previews, colours - lives here.
+      # The hook is declarative and permanent; the contents are yours to edit
+      # without ever rebuilding.
+      [ -r "$HOME/.config/zsh/local.zsh" ] && source "$HOME/.config/zsh/local.zsh"
     '';
   };
 
   users.defaultUserShell = pkgs.zsh;
 
-  # Create the history directory. %h expands to each user's home.
+  # Directories, and symlinks from ~/.config into the repo.
+  #
+  # The LINKS are declarative - a fresh machine gets them automatically, no
+  # manual `ln -sf`. The TARGETS are plain mutable files in the repo, so you
+  # edit them live, git tracks the change, and nothing rebuilds.
+  #
+  # `L` only creates the link if nothing is there, so it will never clobber a
+  # real file you put in its place.
   systemd.user.tmpfiles.rules = [
     "d %h/.local/share/zsh 0700 - - -"
+    "d %h/.config/zsh      0755 - - -"
+    "d %h/.config/niri     0755 - - -"
+    "L %h/.config/zsh/local.zsh    - - - - %h/nixos-config/dotfiles/zsh/local.zsh"
+    "L %h/.config/starship.toml    - - - - %h/nixos-config/dotfiles/starship.toml"
+    "L %h/.config/niri/config.kdl  - - - - %h/nixos-config/dotfiles/niri/config.kdl"
   ];
 
-  programs.starship = {
-    enable = true;
-    settings = {
-      add_newline = false;
-      command_timeout = 1000;
-      format = lib.concatStrings [
-        "$directory" "$git_branch" "$git_status" "$nix_shell"
-        "$python" "$rust" "$nodejs" "$cmd_duration" "$line_break" "$character"
-      ];
-      directory.truncation_length = 3;
-      directory.truncate_to_repo = false;
-      git_status.disabled = false;
-      nix_shell.format = "[$symbol$name]($style) ";
-      nix_shell.symbol = "❄ ";
-      cmd_duration.min_time = 2000;
-      character.success_symbol = "[❯](bold green)";
-      character.error_symbol = "[❯](bold red)";
-    };
-  };
+  # enable only - NO `settings`. Declaring the prompt here would mean a
+  # rebuild every time you change a symbol. The module only sets
+  # STARSHIP_CONFIG when ~/.config/starship.toml is absent, and the tmpfiles
+  # link above makes sure it never is, so dotfiles/starship.toml always wins.
+  programs.starship.enable = true;
 
   programs.fzf = {
     keybindings = true;      # Ctrl-R history, Ctrl-T files, Alt-C cd

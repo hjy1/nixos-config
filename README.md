@@ -15,7 +15,64 @@ nixpkgs commit so this reproduces identically on any machine.
 | `modules/desktop.nix` | niri + Dux Shell, GNOME fallback |
 | `modules/packages.nix` | General software |
 | `modules/gaming.nix` | Steam, gamemode |
-| `dotfiles/niri/config.kdl` | niri config (symlink into `~/.config/niri/`) |
+| `dotfiles/` | mutable, git-tracked config — **never needs a rebuild** |
+
+## What belongs in Nix, and what doesn't
+
+The governing rule: **if you'd change it because of your mood, it does not go
+in Nix.** A rebuild is the right price for things that can break the machine.
+It is the wrong price for a prompt colour.
+
+### Tier 1 — declarative Nix (rebuild required, and that's correct)
+
+Structural, breaks things if wrong, changes rarely:
+
+- kernel, bootloader, initrd, `configurationLimit`
+- NVIDIA driver, filesystems, disk layout
+- **which packages exist**
+- services: pipewire, gdm, niri, dms, direnv, zram
+- users, hostname, networking, locale, timezone
+- GC policy, firewall, mime defaults
+
+### Tier 2 — `dotfiles/`, mutable and git-tracked (no rebuild)
+
+Cosmetic, tweaked on a whim, wants instant feedback. Symlinked into
+`~/.config` by `systemd.user.tmpfiles` rules in `modules/shell.nix`, so the
+*links* are declarative while the *contents* stay editable.
+
+| File | Controls | Takes effect |
+|---|---|---|
+| `dotfiles/starship.toml` | prompt | next prompt |
+| `dotfiles/zsh/local.zsh` | aliases, fzf-tab previews, colours | new shell / `exec zsh` |
+| `dotfiles/niri/config.kdl` | keybinds, gaps, colours, monitors | **instantly** (niri live-reloads) |
+
+Edit these directly. `git diff` sees the change; no `nixos-rebuild` involved.
+
+### Tier 3 — not in this repo at all
+
+**Apps that manage their own config.** Declaring these means fighting them
+every time they hit "save":
+
+- **DMS / Dux Shell** — theming, wallpaper, bar layout. It writes its own
+  config and `matugen` derives palettes from your wallpaper. Leave it alone.
+- GNOME dconf settings
+- VSCode `settings.json` and extensions
+- Chrome profile, extensions, bookmarks
+
+**Data.** Nix is not a backup system:
+
+- Steam and its games (`~/.local/share/Steam`) — content delivery, not config
+- `~/Documents`, photos, model weights, databases
+- project `.venv` / `node_modules` — `uv.lock` and `package-lock.json` own those
+
+**Credentials.** Never commit these: `~/.config/gh`, SSH private keys, API
+tokens. Use `sops-nix`/`agenix` if a secret must be declared.
+
+### When unsure
+
+Start in `dotfiles/`. Promote to Nix only once you're sure it must be
+identical on every machine. Demotion is easy; discovering you need a rebuild
+to change a colour is the annoying direction.
 
 ## Applying
 
@@ -46,11 +103,19 @@ sudo nixos-rebuild switch --flake ~/nixos-config#gear
 
 At the GDM login screen pick **niri** (it's the default) or **GNOME** (fallback).
 
-Link the niri config in before your first niri login:
+The `dotfiles/` symlinks are created for you by the `systemd.user.tmpfiles`
+rules in `modules/shell.nix` — no manual `ln -sf`. They appear on your next
+login; verify with:
 
 ```bash
-mkdir -p ~/.config/niri
-ln -sf ~/nixos-config/dotfiles/niri/config.kdl ~/.config/niri/config.kdl
+ls -l ~/.config/niri/config.kdl ~/.config/starship.toml ~/.config/zsh/local.zsh
+```
+
+Each should point into `~/nixos-config/dotfiles/`. If one is missing, force
+the rules immediately rather than logging out:
+
+```bash
+systemd-tmpfiles --user --create
 ```
 
 ## If niri doesn't come up

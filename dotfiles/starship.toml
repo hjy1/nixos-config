@@ -1,0 +1,27 @@
+# Prompt. Edit freely - starship re-reads this on every prompt, so changes
+# are instant. NEVER requires nixos-rebuild.
+#
+# The NixOS starship module only sets STARSHIP_CONFIG when this file does
+# not exist, so its presence takes precedence automatically.
+
+add_newline = false
+command_timeout = 1000
+format = "$directory$git_branch$git_status$nix_shell$python$rust$nodejs$cmd_duration$line_break$character"
+
+[directory]
+truncation_length = 3
+truncate_to_repo = false
+
+[git_status]
+disabled = false
+
+[nix_shell]
+format = "[$symbol$name]($style) "
+symbol = "❄ "
+
+[cmd_duration]
+min_time = 2000
+
+[character]
+success_symbol = "[❯](bold green)"
+error_symbol = "[❯](bold red)"
