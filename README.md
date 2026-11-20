@@ -69,15 +69,70 @@ here is one-way.
 
 ## Adding a second machine
 
+### Easy route: graphical installer, then apply this repo
+
+Install a stock system with the graphical ISO, boot in, then:
+
 ```bash
-sudo nixos-generate-config --dir /tmp/hw
+export NIX_CONFIG="experimental-features = nix-command flakes"
+nix-shell -p git
+git clone https://github.com/joure5501/nixos-config ~/cfg && cd ~/cfg
 mkdir -p hosts/<name>
-cp /tmp/hw/hardware-configuration.nix hosts/<name>/
+cp /etc/nixos/hardware-configuration.nix hosts/<name>/
+# add a nixosConfigurations.<name> block in flake.nix
+git add -A
+sudo nixos-rebuild switch --flake .#<name>
 ```
 
-Then add a `nixosConfigurations.<name>` block in `flake.nix` reusing the same
-`configuration.nix` and whichever modules apply. `configuration.nix` is written
-to be host-agnostic; keep it that way.
+The installer handles partitioning and your user password. Nothing else needed.
+
+### Declarative route: install from the ISO with disko
+
+```bash
+export NIX_CONFIG="experimental-features = nix-command flakes"
+nix-shell -p git
+git clone https://github.com/joure5501/nixos-config ~/cfg && cd ~/cfg
+
+lsblk                                     # identify the TARGET disk
+mkdir -p hosts/<name>
+cp hosts/_template/disk.nix hosts/<name>/disk.nix
+$EDITOR hosts/<name>/disk.nix             # set `device`
+$EDITOR flake.nix                         # uncomment + rename the template block
+
+# !! DESTRUCTIVE - wipes the named disk, no prompt. Re-read `device` first. !!
+sudo env NIX_CONFIG="experimental-features = nix-command flakes" \
+  nix run github:nix-community/disko -- \
+  --mode destroy,format,mount ~/cfg/hosts/<name>/disk.nix
+
+# --no-filesystems because disko already declares every fileSystems.* entry
+sudo nixos-generate-config --root /mnt --no-filesystems
+cp /mnt/etc/nixos/hardware-configuration.nix hosts/<name>/
+
+git add -A                                # new files are INVISIBLE to the flake until staged
+sudo nixos-install --flake ~/cfg#<name>   # prompts for the ROOT password at the end
+```
+
+### PASSWORDS - do not skip this
+
+`nixos-install` sets a password for **root only**. The user `he` is declared with
+no password, and in NixOS that means login is *disabled*, not blank. You will
+reach GDM and find no password works for `he`.
+
+Set it before rebooting, while still in the installer:
+
+```bash
+sudo nixos-enter --root /mnt -c 'passwd he'
+```
+
+Already rebooted? At the GDM screen hit Ctrl+Alt+F2, log in as `root` with the
+install password, run `passwd he`, then Ctrl+Alt+F1.
+
+`users.mutableUsers` is `true` here, so a password set with `passwd` persists
+across rebuilds. Never set `mutableUsers = false` without also setting
+`users.users.he.hashedPassword`, or every rebuild will lock you out.
+
+`configuration.nix` is written to be host-agnostic; keep it that way. Per-machine
+things belong in `hosts/<name>/`.
 
 ## Updating
 
