@@ -8,6 +8,7 @@
     ../../modules/nvidia.nix
     ../../modules/desktop.nix
     ../../modules/packages.nix
+    ../../modules/shell.nix
     ../../modules/gaming.nix
   ];
 }
