@@ -6,7 +6,7 @@
 # Live files you edit normally, no command:
 #   aliases, fzf-tab previews  ->  home/config/zsh/local.zsh
 #   prompt                     ->  home/config/starship.toml
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, me, ... }:
 
 {
   programs.zsh = {
@@ -63,6 +63,16 @@
   # Enabled with no `settings`, so home-manager writes no starship.toml: the
   # prompt is the live file home/config/starship.toml.
   programs.starship.enable = true;
+
+  # nh: front-end for nixos-rebuild / home-manager. Same builds, plus a
+  # diff of what changed (nvd) and a tree of the build. `nrs`/`hms` in
+  # config/zsh/local.zsh call it. `flake` sets NH_FLAKE, so no --flake.
+  # Its own `clean` is left off: nix.gc in modules/maintenance.nix already
+  # collects garbage on a timer.
+  programs.nh = {
+    enable = true;
+    flake = me.repoPath;
+  };
 
   programs.fzf.enable = true;     # Ctrl-R history, Ctrl-T files, Alt-C cd
   programs.zoxide.enable = true;  # `z <partial>` jumps to frecent dirs
