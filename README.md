@@ -219,10 +219,12 @@ sudo nixos-rebuild switch --flake ~/nixos-config#gear
 The login screen is DMS's own greeter (it copies your DMS wallpaper and
 theme), and **niri** is the session.
 
-**Changing the login manager** (as the GNOME → DMS-greeter move did) must be
-applied with `sudo nixos-rebuild boot --flake ~/nixos-config` and a reboot,
-not `switch`: a live switch stops the old login manager, and with it the
-session you are running the command from.
+**`nrs` vs `nrboot`.** `nrs` applies a change *now*. `nrboot` installs it
+for the *next boot* and touches nothing running — then reboot. Use `nrboot`
+whenever applying live would pull the floor out from under your session:
+changing the login manager (greeter/GDM), the GPU driver, or the kernel. A
+live `nrs` there stops the old login manager, and the session you are
+running the command from with it.
 
 Then apply **me** — once, as your user, no sudo. The first time the
 `home-manager` command does not exist yet, so run it from the flake input;

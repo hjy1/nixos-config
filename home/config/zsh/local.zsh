@@ -21,6 +21,10 @@ alias lt='eza --tree --level=2'
 #       in the way of a new link instead of failing.
 alias nrs='sudo nixos-rebuild switch --flake "${NIXOS_REPO:-$HOME/nixos-config}"'
 alias nrb='sudo nixos-rebuild build  --flake "${NIXOS_REPO:-$HOME/nixos-config}"'
+# nrboot: install for the NEXT boot only, touch nothing running - then
+# reboot. Use it instead of nrs when a change would kill your session if
+# applied live: login manager (greeter/GDM), GPU driver, kernel.
+alias nrboot='sudo nixos-rebuild boot --flake "${NIXOS_REPO:-$HOME/nixos-config}"'
 alias hms='home-manager switch -b hm-bak --flake "${NIXOS_REPO:-$HOME/nixos-config}"'
 alias nfu='cd "${NIXOS_REPO:-$HOME/nixos-config}" && nix flake update'
 alias ngc='sudo nix-collect-garbage --delete-older-than 30d'
