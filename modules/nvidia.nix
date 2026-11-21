@@ -1,80 +1,98 @@
-# NVIDIA + CUDA for the RTX 50-series (Blackwell) card in this box.
+# NVIDIA + CUDA. Opt-in per host: my.nvidia.enable = true;
 #
-# Detected hardware:
+# Off by default because the closure is multi-GB and a machine without the
+# card has nothing to gain from it. This module is still *imported* on every
+# host - that is what makes the flag exist to be set.
+#
+# Written against the card in `gear`:
 #   10de:2b85  NVIDIA Blackwell  (was running on nouveau - barely functional)
 #   1002:13c0  AMD Raphael iGPU  (what was actually driving your display)
+# Another host with an older card can keep the flag and override the few
+# mkDefaults below rather than forking the module.
 #
 # Setting videoDrivers = [ "nvidia" ] makes NixOS blacklist nouveau for you.
 { config, pkgs, lib, ... }:
 
+let
+  cfg = config.my.nvidia;
+in
 {
-  services.xserver.videoDrivers = [ "nvidia" ];
+  options.my.nvidia.enable =
+    lib.mkEnableOption "the proprietary NVIDIA driver (multi-GB closure)";
 
-  hardware.graphics = {
-    enable = true;
-    enable32Bit = true; # Steam / Proton need the 32-bit stack
-  };
+  config = lib.mkIf cfg.enable {
+    services.xserver.videoDrivers = [ "nvidia" ];
 
-  hardware.nvidia = {
-    # MANDATORY on Blackwell. The old proprietary kernel module does not
-    # support 50-series cards - with open = false you get a black screen.
-    open = true;
+    hardware.graphics = {
+      enable = true;
+      enable32Bit = true; # Steam / Proton need the 32-bit stack
+    };
 
-    # Required for Wayland (niri will not start without it).
-    modesetting.enable = true;
+    hardware.nvidia = {
+      # MANDATORY on Blackwell. The old proprietary kernel module does not
+      # support 50-series cards - with open = false you get a black screen.
+      # mkDefault so a host with a pre-Turing card can set false.
+      open = lib.mkDefault true;
 
-    nvidiaSettings = true;
+      # Required for Wayland (niri will not start without it).
+      modesetting.enable = true;
 
-    # Desktop with a wall socket: leave suspend/resume power hooks off.
-    # They exist for laptops and add failure modes you don't need.
-    powerManagement.enable = false;
-    powerManagement.finegrained = false;
+      nvidiaSettings = true;
 
-    # 615.78.08. The branches available are production/stable (595.112.07)
-    # and latest (615.78.08).
+      # Desktop with a wall socket: leave suspend/resume power hooks off.
+      # They exist for laptops and add failure modes you don't need - which
+      # is exactly why these are mkDefault and not plain false. A laptop host
+      # turns them on from its own file.
+      powerManagement.enable = lib.mkDefault false;
+      powerManagement.finegrained = lib.mkDefault false;
+
+      # 615.78.08. The branches available are production/stable (595.112.07)
+      # and latest (615.78.08).
+      #
+      # `latest` is the right pick here specifically BECAUSE of the kernel: this
+      # host runs linuxPackages_latest (7.3.x), and the proprietary NVIDIA kernel
+      # module has to compile against it. A newer driver branch has seen newer
+      # kernels. Pairing the newest kernel with a conservative driver is the
+      # combination most likely to fail to build.
+      #
+      # If a host drops to the default kernel (6.18.x), `production` becomes the
+      # safer choice again - the two settings should move together, which is why
+      # both this and boot.kernelPackages are mkDefault.
+      package = lib.mkDefault config.boot.kernelPackages.nvidiaPackages.latest;
+    };
+
+    # Load nvidia early so you get KMS from boot rather than a mode switch.
+    boot.initrd.kernelModules = [ "nvidia" ];
+
+    environment.systemPackages = with pkgs; [
+      nvtopPackages.full   # GPU monitor; small, genuinely wants to be global
+    ];
+
+    # The CUDA *toolkit* (nvcc, headers, cuda-merged-13.5 - multi-GB) is
+    # deliberately NOT here. It would sit in every generation and be retained
+    # by GC for 30 days.
     #
-    # `latest` is the right pick here specifically BECAUSE of the kernel: this
-    # host runs linuxPackages_latest (7.3.x), and the proprietary NVIDIA kernel
-    # module has to compile against it. A newer driver branch has seen newer
-    # kernels. Pairing the newest kernel with a conservative driver is the
-    # combination most likely to fail to build.
+    # Note what you still get system-wide: the NVIDIA driver ships libcuda.so,
+    # the CUDA *runtime*. So prebuilt CUDA binaries - PyTorch wheels, llama.cpp
+    # releases, anything that dlopens libcuda - work fine without the toolkit.
+    # Only *compiling* .cu source needs nvcc.
     #
-    # If you ever drop to the default kernel (6.18.x), `production` becomes the
-    # safer choice again - the two settings should move together.
-    package = config.boot.kernelPackages.nvidiaPackages.latest;
+    # For that, use the devShell in this flake:
+    #     nix develop ~/nixos-config#cuda
+    # or per-project, which is the better habit:
+    #     echo 'use flake ~/nixos-config#cuda' > .envrc && direnv allow
+
+    # DELIBERATELY NOT SET:
+    #   nixpkgs.config.cudaSupport = true;
+    # That flag rebuilds every CUDA-capable package in your closure from
+    # source with no binary cache hits - think hours of compiling, including
+    # things you never asked for. Set it per-package via .override if some
+    # specific package needs CUDA support compiled in.
+
+    # Also deliberately not set globally:
+    #   environment.sessionVariables.LIBVA_DRIVER_NAME = "nvidia";
+    # You have two GPUs; forcing the VA-API driver system-wide tends to break
+    # hardware video decode in browsers rather than fix it. Set it per-app if
+    # you need it.
   };
-
-  # Load nvidia early so you get KMS from boot rather than a mode switch.
-  boot.initrd.kernelModules = [ "nvidia" ];
-
-  environment.systemPackages = with pkgs; [
-    nvtopPackages.full   # GPU monitor; small, genuinely wants to be global
-  ];
-
-  # The CUDA *toolkit* (nvcc, headers, cuda-merged-13.5 - multi-GB) is
-  # deliberately NOT here. It would sit in every generation and be retained
-  # by GC for 30 days.
-  #
-  # Note what you still get system-wide: the NVIDIA driver ships libcuda.so,
-  # the CUDA *runtime*. So prebuilt CUDA binaries - PyTorch wheels, llama.cpp
-  # releases, anything that dlopens libcuda - work fine without the toolkit.
-  # Only *compiling* .cu source needs nvcc.
-  #
-  # For that, use the devShell in this flake:
-  #     nix develop ~/nixos-config#cuda
-  # or per-project, which is the better habit:
-  #     echo 'use flake ~/nixos-config#cuda' > .envrc && direnv allow
-
-  # DELIBERATELY NOT SET:
-  #   nixpkgs.config.cudaSupport = true;
-  # That flag rebuilds every CUDA-capable package in your closure from
-  # source with no binary cache hits - think hours of compiling, including
-  # things you never asked for. Set it per-package via .override if some
-  # specific package needs CUDA support compiled in.
-
-  # Also deliberately not set globally:
-  #   environment.sessionVariables.LIBVA_DRIVER_NAME = "nvidia";
-  # You have two GPUs; forcing the VA-API driver system-wide tends to break
-  # hardware video decode in browsers rather than fix it. Set it per-app if
-  # you need it.
 }

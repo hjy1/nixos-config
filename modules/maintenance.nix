@@ -5,12 +5,15 @@
   # Your ESP is 1G. Each generation keeps a kernel + initrd in /boot, so an
   # unbounded list will eventually fill it - and a full ESP makes rebuilds
   # fail in a confusing way. Cap the bootloader menu.
-  boot.loader.systemd-boot.configurationLimit = 10;
+  #
+  # mkDefault: ESP size is a per-host fact, so a machine with a 512M ESP
+  # should lower this from its own host file.
+  boot.loader.systemd-boot.configurationLimit = lib.mkDefault 10;
 
   nix.gc = {
     automatic = true;
-    dates = "weekly";
-    options = "--delete-older-than 30d";
+    dates = lib.mkDefault "weekly";
+    options = lib.mkDefault "--delete-older-than 30d";
   };
 
   nix.settings = {
@@ -25,9 +28,13 @@
   services.fstrim.enable = true;
 
   # btrfs: scrub verifies checksums across the filesystem and catches silent
-  # corruption early. Assumes a btrfs root, which this host has.
+  # corruption early.
+  #
+  # Enabled from the root filesystem's own type rather than assumed: this
+  # module is unconditional for every host, and a scrub timer on an ext4 or
+  # ZFS root is a unit that fails every month for no reason.
   services.btrfs.autoScrub = {
-    enable = true;
+    enable = lib.mkDefault (config.fileSystems."/".fsType or "" == "btrfs");
     interval = "monthly";
     fileSystems = [ "/" ];
   };

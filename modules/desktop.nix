@@ -2,6 +2,10 @@
 #
 # GNOME is intentionally still here as a login-screen fallback. Once niri
 # is confirmed working, see the "STRIPPING GNOME" note at the bottom.
+#
+# Not flag-gated: every host so far is a workstation. The day a headless or
+# server host appears, give this module a my.desktop.enable flag exactly the
+# way modules/nvidia.nix does - do not go back to curating import lists.
 { config, pkgs, lib, ... }:
 
 {
@@ -10,8 +14,8 @@
   programs.niri.enable = true;
 
   # Fallback desktop. Pick GNOME at the GDM session picker if niri misbehaves.
-  services.displayManager.gdm.enable = true;
-  services.desktopManager.gnome.enable = true;
+  services.displayManager.gdm.enable = lib.mkDefault true;
+  services.desktopManager.gnome.enable = lib.mkDefault true;
 
   # Dux Shell (formerly DankMaterialShell). The nixpkgs attribute is now
   # `dux-shell`; upstream rebranded to duxlabs.dev, so the store path reads
@@ -55,7 +59,7 @@
   ];
 
   # STRIPPING GNOME, once niri is proven:
-  #   services.desktopManager.gnome.enable = false;
+  #   services.desktopManager.gnome.enable = false;   # no mkForce needed
   # Note that niri still depends on xdg-desktop-portal-gnome and nautilus
   # for its portals and file chooser, so a few GNOME components stay in the
   # closure by design. That is expected, not leftover cruft.

@@ -1,12 +1,16 @@
 # Base system. Portable across machines - anything hardware-specific lives in
 # hosts/<name>/hardware-configuration.nix instead.
-{ config, pkgs, ... }:
+{ config, pkgs, lib, ... }:
 
 {
   # Boot
-  boot.loader.systemd-boot.enable = true;
-  boot.loader.efi.canTouchEfiVariables = true;
-  boot.kernelPackages = pkgs.linuxPackages_latest;
+  boot.loader.systemd-boot.enable = lib.mkDefault true;
+  # mkDefault: some firmware (and most VMs) needs this off, which is a
+  # per-machine fact.
+  boot.loader.efi.canTouchEfiVariables = lib.mkDefault true;
+  # mkDefault because modules/nvidia.nix pins its driver branch to this
+  # choice - see the note there before a host overrides it.
+  boot.kernelPackages = lib.mkDefault pkgs.linuxPackages_latest;
 
   # Flakes need these enabled to build the system at all.
   nix.settings.experimental-features = [ "nix-command" "flakes" ];
@@ -29,20 +33,20 @@
   zramSwap = {
     enable = true;
     algorithm = "zstd";
-    memoryPercent = 25;
+    memoryPercent = lib.mkDefault 25;
   };
 
   # Microcode and device firmware blobs. The hardware file references this
   # via mkDefault for AMD microcode but never turns it on.
   hardware.enableRedistributableFirmware = true;
 
-  # Networking
-  networking.hostName = "gear";
+  # Networking. The hostname is NOT here: flake.nix derives it from the
+  # host's directory name, so hosts/laptop is named "laptop" with no edit.
   networking.networkmanager.enable = true;
 
   # Locale / time
-  time.timeZone = "America/Chicago";
-  i18n.defaultLocale = "en_US.UTF-8";
+  time.timeZone = lib.mkDefault "America/Chicago";
+  i18n.defaultLocale = lib.mkDefault "en_US.UTF-8";
   i18n.extraLocaleSettings = {
     LC_ADDRESS = "en_US.UTF-8";
     LC_IDENTIFICATION = "en_US.UTF-8";
@@ -56,11 +60,11 @@
   };
 
   services.xserver.xkb = {
-    layout = "us";
-    variant = "";
+    layout = lib.mkDefault "us";
+    variant = lib.mkDefault "";
   };
 
-  services.printing.enable = true;
+  services.printing.enable = lib.mkDefault true;
 
   # Audio
   services.pulseaudio.enable = false;
@@ -81,7 +85,8 @@
   # vscode, nvidia drivers, steam, bilibili and CUDA are all unfree.
   nixpkgs.config.allowUnfree = true;
 
-  # Do NOT change this, even though the system now tracks unstable.
-  # It describes which NixOS release first installed this machine.
-  system.stateVersion = "26.05";
+  # system.stateVersion is NOT here. It records which NixOS release first
+  # installed a *particular machine*, so it is per-host by definition and
+  # lives in hosts/<name>/default.nix. A shared value here would hand a
+  # machine installed years from now the wrong one.
 }

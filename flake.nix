@@ -59,9 +59,33 @@
           specialArgs = { inherit inputs; };
           modules = [
             disko.nixosModules.disko
+
+            # The directory name IS the hostname. Keeps `nixos-rebuild switch
+            # --flake ~/nixos-config` (no #attr) correct on every machine, and
+            # makes it impossible for a new host to boot up wearing another
+            # machine's name. mkDefault, so a host can disagree if it must.
+            { networking.hostName = lib.mkDefault name; }
+
+            # Base layer - unconditional on every host.
             ./configuration.nix
             ./modules/maintenance.nix
-            (./hosts + "/${name}")   # that host's default.nix picks its modules
+
+            # Feature layer - imported everywhere, so every option below
+            # always exists. Each module decides for itself whether to do
+            # anything, reading the my.* flags the host sets. A host selects
+            # features by setting flags, NOT by curating an import list:
+            # curating the list is what let hosts/gear and hosts/_template
+            # drift into two different systems.
+            ./modules/defaults.nix
+            ./modules/desktop.nix
+            ./modules/fonts.nix
+            ./modules/gaming.nix
+            ./modules/nvidia.nix
+            ./modules/packages.nix
+            ./modules/shell.nix
+
+            # Host layer - hardware, disks, and the flags.
+            (./hosts + "/${name}")
           ];
         }
       );

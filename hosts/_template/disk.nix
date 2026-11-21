@@ -5,9 +5,15 @@
 # This file is only ever run from an installer ISO against a blank disk.
 # NEVER run it against a disk holding a system you care about.
 #
-# Copy to hosts/<name>/disk.nix, set `device` to the real disk, then:
+# Copy to hosts/<name>/disk.nix, set `device` to the real disk, then from
+# inside this repo on the installer:
 #   lsblk                                    # find the device name
-#   sudo disko --mode destroy,format,mount /mnt/cfg/hosts/<name>/disk.nix
+#   sudo nix run .#disko -- --mode destroy,format,mount hosts/<name>/disk.nix
+#
+# `.#disko` is why flake.nix exports a disko package: the ISO does not have
+# the binary, and this way it does not need it. Add
+# --option extra-experimental-features "nix-command flakes" if the ISO's root
+# user has flakes disabled.
 #
 # disko generates the fileSystems.* entries itself, so the generated
 # hardware-configuration.nix for this host will be much smaller - no

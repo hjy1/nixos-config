@@ -59,9 +59,17 @@
     '';
   };
 
+  # NOT mkDefault, deliberately. nixpkgs' bash.nix already claims this with
+  # mkDefault pkgs.bashInteractive, so a second mkDefault here is two
+  # definitions at the same priority with different values - which is an
+  # eval error, not a tie-break. A plain definition (priority 100) beats
+  # both, and a host that wants fish still overrides it with mkForce.
   users.defaultUserShell = pkgs.zsh;
 
   # Directories, and symlinks from ~/.config into the repo.
+  #
+  # The repo path below is load-bearing: clone this repo to ~/nixos-config on
+  # every machine, or these four links dangle.
   #
   # The LINKS are declarative - a fresh machine gets them automatically, no
   # manual `ln -sf`. The TARGETS are plain mutable files in the repo, so you

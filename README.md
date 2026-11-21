@@ -5,23 +5,77 @@ nixpkgs commit so this reproduces identically on any machine.
 
 ## Layout
 
+Three layers, and every file belongs to exactly one.
+
+| Layer | Where | Applies to | Rule |
+|---|---|---|---|
+| **base** | `configuration.nix`, `modules/maintenance.nix` | every host, unconditionally | states its opinions with `lib.mkDefault`, so a host can disagree without `mkForce` |
+| **feature** | `modules/*.nix` | imported on every host; acts only if its `my.*` flag is on | one concern per file |
+| **host** | `hosts/<name>/` | exactly one machine | hardware, disks, feature flags, `stateVersion` |
+
 | Path | Purpose |
 |---|---|
-| `flake.nix` | Inputs (nixpkgs-unstable) and the `gear` host output |
+| `flake.nix` | Inputs, the shared module list, and host auto-discovery |
 | `flake.lock` | Exact commit pins — **commit this** |
-| `configuration.nix` | Portable base system |
-| `hosts/gear/hardware-configuration.nix` | Machine-specific. Regenerate per machine. |
-| `modules/nvidia.nix` | RTX 50-series drivers + CUDA |
+| `configuration.nix` | Portable base system: boot, locale, audio, users |
+| `modules/maintenance.nix` | GC, boot-entry cap, fstrim, btrfs scrub |
 | `modules/desktop.nix` | niri + Dux Shell, GNOME fallback |
+| `modules/shell.nix` | zsh, starship, fzf, direnv, the `dotfiles/` symlinks |
 | `modules/packages.nix` | General software |
-| `modules/gaming.nix` | Steam, gamemode |
+| `modules/defaults.nix` | Default applications and mime handlers |
+| `modules/fonts.nix` | Font packages and the fallback chain |
+| `modules/nvidia.nix` | RTX drivers — `my.nvidia.enable` |
+| `modules/gaming.nix` | Steam, gamemode — `my.gaming.enable` |
+| `hosts/gear/` | This machine: hardware scan, flags, `stateVersion` |
+| `hosts/_template/` | Copy this to add a machine (`_` prefix = not a host) |
 | `dotfiles/` | mutable, git-tracked config — **never needs a rebuild** |
+
+Two things are deliberately absent from the host layer: the **module list** (it
+is identical for every host, in `flake.nix`) and the **hostname** (derived from
+the host's directory name). Curating a per-host import list is what let
+`hosts/gear` and `hosts/_template` drift into two different systems — one with
+zsh and fonts, one without.
+
+### How the layers merge
+
+"Layer" is a filing metaphor, not a Nix mechanism, and the two places it leaks
+are worth knowing:
+
+**`imports` is a set, not a stack.** The module system collects every import
+into one unordered set and merges them in a fixpoint. Reordering the list in
+`flake.nix` produces a bit-identical system; the only thing that shifts is the
+order of `environment.systemPackages`, which changes a derivation hash without
+changing its contents.
+
+**Conflicts resolve by priority, not by position.** Nothing "wins by being
+later". Lower number wins:
+
+| | priority | meaning here |
+|---|---|---|
+| option's own default | 1500 | what nixpkgs ships |
+| `lib.mkDefault` | 1000 | the base layer's opinion |
+| plain definition | 100 | a host's decision |
+| `lib.mkForce` | 50 | override something already claimed at 100 |
+
+Two *plain* definitions of the same scalar is an eval error, not last-write-
+wins — which is the feature. It means a host overriding the base layer either
+works or fails loudly; it never silently half-applies.
+
+The corollary, and the one real trap: `mkDefault` is not free insurance. Two
+`mkDefault`s with different values are *also* a conflict, because they tie.
+`modules/shell.nix` has to define `users.defaultUserShell` plainly for exactly
+that reason — nixpkgs' own `bash.nix` already claims it with `mkDefault`, so a
+second `mkDefault` there fails to evaluate. The comment in that file explains
+it in place.
 
 ## What belongs in Nix, and what doesn't
 
 The governing rule: **if you'd change it because of your mood, it does not go
 in Nix.** A rebuild is the right price for things that can break the machine.
 It is the wrong price for a prompt colour.
+
+Note this is a *different axis* from the three layers above. Layers answer
+"which file defines this option"; tiers answer "how expensive is it to change".
 
 ### Tier 1 — declarative Nix (rebuild required, and that's correct)
 
@@ -172,10 +226,22 @@ Install a stock system with the graphical ISO, boot in, then:
 ```bash
 export NIX_CONFIG="experimental-features = nix-command flakes"
 nix-shell -p git
-git clone https://github.com/joure5501/nixos-config ~/cfg && cd ~/cfg
+
+# Clone to ~/nixos-config specifically: the dotfile symlinks in
+# modules/shell.nix point at that path and dangle anywhere else.
+git clone https://github.com/joure5501/nixos-config ~/nixos-config && cd ~/nixos-config
+
 mkdir -p hosts/<name>
 cp /etc/nixos/hardware-configuration.nix hosts/<name>/
-# add a nixosConfigurations.<name> block in flake.nix
+cp hosts/_template/default.nix          hosts/<name>/
+
+# A host directory MUST have a default.nix - the flake imports the directory.
+# On this route there is no disko, so delete the ./disk.nix import from it,
+# then set system.stateVersion and whichever my.* flags apply.
+$EDITOR hosts/<name>/default.nix
+
+# Nothing to add to flake.nix: hosts/<name>/ is discovered automatically and
+# the directory name becomes the hostname.
 git add -A
 sudo nixos-rebuild switch --flake .#<name>
 ```
@@ -201,7 +267,7 @@ ip -brief addr         # note the IP
 mkdir -p hosts/laptop
 cp hosts/_template/{default.nix,disk.nix,hardware-configuration.nix} hosts/laptop/
 $EDITOR hosts/laptop/disk.nix       # set `device` to the target's disk
-$EDITOR hosts/laptop/default.nix    # pick modules (nvidia is off by default)
+$EDITOR hosts/laptop/default.nix    # stateVersion + my.* feature flags
 git add -A                          # new files are invisible to the flake until staged
 ```
 
@@ -231,8 +297,8 @@ The `hosts/_template/hardware-configuration.nix` placeholder exists because the
 disko phase has to evaluate `nixosConfigurations.laptop` before the target has
 been probed. It gets overwritten; don't bother editing it.
 
-`modules/nvidia.nix` is commented out in the template — it drags in a multi-GB
-CUDA closure. Uncomment only on a machine with an NVIDIA GPU.
+`my.nvidia.enable` is off in the template — the driver drags in a multi-GB
+closure. Turn it on only on a machine with an NVIDIA GPU.
 
 ### PASSWORDS - do not skip this
 

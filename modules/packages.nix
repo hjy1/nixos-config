@@ -26,14 +26,16 @@
 
   environment.systemPackages = with pkgs; [
     # Editors / tooling
-    vim
+    # No `vim` here: programs.neovim above sets vimAlias, and a real vim in
+    # this list collides with it in system-path. buildEnv has
+    # ignoreCollisions = true, so the loser is dropped with only a warning -
+    # and which one wins depends on module order. Leave nvim unopposed.
+    # ripgrep and fd live in modules/shell.nix, not duplicated here.
     vscode
     claude-code      # 2.1.327 on unstable, vs 2.1.223 frozen in 26.05
     jq               # was missing; your statusline and plenty else want it
     wget
     curl
-    ripgrep
-    fd
     tree
     htop
     unzip

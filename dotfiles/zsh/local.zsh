@@ -12,7 +12,8 @@ alias ll='eza -l --git --group-directories-first'
 alias la='eza -la --git --group-directories-first'
 alias lt='eza --tree --level=2'
 
-# This config
+# This config. No `#<host>` needed: flake.nix names every host after its
+# directory, so the bare --flake path resolves to this machine.
 alias nrs='sudo nixos-rebuild switch --flake ~/nixos-config'
 alias nrb='sudo nixos-rebuild build  --flake ~/nixos-config'
 alias nfu='cd ~/nixos-config && nix flake update'
