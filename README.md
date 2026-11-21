@@ -98,7 +98,7 @@ Cosmetic, tweaked on a whim, wants instant feedback. Symlinked into
 |---|---|---|
 | `dotfiles/starship.toml` | prompt | next prompt |
 | `dotfiles/zsh/local.zsh` | aliases, fzf-tab previews, colours | new shell / `exec zsh` |
-| `dotfiles/niri/config.kdl` | keybinds, gaps, colours, monitors | **instantly** (niri live-reloads) |
+| `dotfiles/niri/config.kdl` | keybinds, column widths, cursor | **instantly** (niri live-reloads) |
 
 Edit these directly. `git diff` sees the change; no `nixos-rebuild` involved.
 
@@ -107,8 +107,11 @@ Edit these directly. `git diff` sees the change; no `nixos-rebuild` involved.
 **Apps that manage their own config.** Declaring these means fighting them
 every time they hit "save":
 
-- **DMS / Dux Shell** — theming, wallpaper, bar layout. It writes its own
-  config and `matugen` derives palettes from your wallpaper. Leave it alone.
+- **DMS / Dux Shell** — theming, wallpaper, bar layout, monitors, gaps. It
+  writes `~/.config/dms/` and generates `~/.config/niri/dms/*.kdl`, which
+  `config.kdl` pulls in with `include optional=true`. `matugen` derives
+  palettes from your wallpaper. Change these in DMS Settings (`Mod+,`), not
+  in git.
 - GNOME dconf settings
 - VSCode `settings.json` and extensions
 - Chrome profile, extensions, bookmarks
@@ -359,9 +362,6 @@ every package-set bump, and `git revert` undoes a bad one.
 
 ## Known-unverified bits
 
-- The `dms ipc call <target> <function>` **syntax** is confirmed, but the target
-  names in `config.kdl` (`spotlight`, `powermenu`, `clipboard`) are not — they
-  couldn't be enumerated without DMS running. Run `dms ipc call` with no args,
-  or `dms keybinds`, once you're in niri and correct the binds if needed.
-- Monitor settings in `config.kdl` are commented out pending real output names
-  from `niri msg outputs`.
+- Monitor DDC brightness: the user is in `i2c` and the module enables
+  `hardware.i2c`, but whether the LG UltraFine answers DDC/CI is a property of
+  the monitor. `dms doctor` reports "I2C/DDC" once it can see one.

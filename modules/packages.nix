@@ -8,6 +8,12 @@
       init.defaultBranch = "main";
       user.name = "Jiayou He";
       user.email = "forever56946@gmail.com";
+      # git asks gh for GitHub HTTPS credentials, so `gh auth login` once is
+      # all a fresh machine needs. Same thing `gh auth setup-git` would write
+      # to ~/.gitconfig, but declared - so it survives a reinstall. The
+      # empty helper first clears any inherited helper for this host.
+      credential."https://github.com".helper = [ "" "!gh auth git-credential" ];
+      credential."https://gist.github.com".helper = [ "" "!gh auth git-credential" ];
     };
   };
 
@@ -33,6 +39,7 @@
     # ripgrep and fd live in modules/shell.nix, not duplicated here.
     vscode
     claude-code      # 2.1.327 on unstable, vs 2.1.223 frozen in 26.05
+    gh               # GitHub CLI; also git's credential helper (above)
     jq               # was missing; your statusline and plenty else want it
     wget
     curl

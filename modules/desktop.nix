@@ -17,15 +17,20 @@
   services.displayManager.gdm.enable = lib.mkDefault true;
   services.desktopManager.gnome.enable = lib.mkDefault true;
 
-  # Dux Shell (formerly DankMaterialShell). The nixpkgs attribute is now
-  # `dux-shell`; upstream rebranded to duxlabs.dev, so the store path reads
-  # "dux-shell" and the CLI is `dms`. There is no NixOS module for it, but
-  # the package ships a systemd user unit, which is the clean way in.
-  systemd.packages = [ pkgs.dux-shell ];
-  systemd.user.services.dms = {
-    overrideStrategy = "asDropin";
-    wantedBy = [ "graphical-session.target" ];
-  };
+  # Dux Shell (formerly DankMaterialShell; the CLI is still `dms`).
+  #
+  # Use the nixpkgs module, not a hand-rolled unit. The first version of this
+  # file did `systemd.packages = [ dux-shell ]` plus a wantedBy override, and
+  # DMS crash-looped on login with `exec: "qs": executable file not found`:
+  # NixOS gives every systemd.user.services entry a minimal PATH, which
+  # hides quickshell. The module sets `path = mkForce [ ]` so the unit
+  # inherits the session PATH, and also pulls in quickshell, matugen, cava,
+  # accounts-daemon (user avatar) and i2c (DDC monitor brightness).
+  programs.dux-shell.enable = true;
+
+  # DDC/CI brightness for external monitors goes through /dev/i2c-*, which
+  # hardware.i2c (enabled by the module above) gives to the i2c group.
+  users.users."he".extraGroups = [ "i2c" ];
 
   # Make Electron/Chromium apps run as native Wayland clients instead of
   # going through XWayland. Without this, VSCode and bilibili (both Electron)
@@ -34,14 +39,20 @@
   environment.sessionVariables.NIXOS_OZONE_WL = "1";
 
   environment.systemPackages = with pkgs; [
-    dux-shell
-    quickshell          # the QML runtime DMS is built on
-    xwayland-satellite  # run X11 apps under niri
-    matugen             # DMS uses this for wallpaper-derived theming
+    # dux-shell, quickshell, matugen and cava come from programs.dux-shell.
+
+    # X11 apps under niri. niri (>= 25.08) starts this itself on demand and
+    # exports DISPLAY - it only has to be on PATH. Do NOT also spawn it from
+    # config.kdl: that runs a second, useless copy.
+    xwayland-satellite
+
+    # GTK3 theme that DMS recolours from the wallpaper (`dms doctor` flags
+    # it as missing). Being installed is Tier 1; selecting it is DMS's job.
+    adw-gtk3
+
     wl-clipboard
     brightnessctl
     playerctl
-    cava
   ];
 
   # Trim the GNOME app bundle you didn't ask for. Safe to prune while

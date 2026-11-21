@@ -6,8 +6,12 @@
 font-family = JetBrainsMono Nerd Font
 font-size = 11
 
-# Built-in themes: `ghostty +list-themes`
-theme = catppuccin-mocha
+# Built-in themes: `ghostty +list-themes`. Names are exact and
+# case-sensitive ("Catppuccin Mocha", not "catppuccin-mocha" - the wrong
+# spelling pops a "Configuration Errors" dialog on every launch).
+# `theme = dankcolors` follows the DMS wallpaper palette instead; DMS
+# regenerates ~/.config/ghostty/themes/dankcolors when the wallpaper changes.
+theme = Catppuccin Mocha
 
 background-opacity = 0.95
 window-padding-x = 8

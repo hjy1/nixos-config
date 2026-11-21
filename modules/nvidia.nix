@@ -64,6 +64,22 @@ in
     # Load nvidia early so you get KMS from boot rather than a mode switch.
     boot.initrd.kernelModules = [ "nvidia" ];
 
+    # niri on NVIDIA: the driver keeps a large pool of freed buffers around
+    # for reuse, and in a Wayland compositor that pool grows to ~1GiB+ of
+    # VRAM for nothing. This application profile is the fix niri's own wiki
+    # documents; it only matches the compositor process.
+    environment.etc."nvidia/nvidia-application-profiles-rc.d/50-limit-free-buffer-pool-in-wayland-compositors.json".text =
+      builtins.toJSON {
+        rules = [{
+          pattern = { feature = "procname"; matches = "niri"; };
+          profile = "Limit Free Buffer Pool On Wayland Compositors";
+        }];
+        profiles = [{
+          name = "Limit Free Buffer Pool On Wayland Compositors";
+          settings = [{ key = "GLVidHeapReuseRatio"; value = 0; }];
+        }];
+      };
+
     environment.systemPackages = with pkgs; [
       nvtopPackages.full   # GPU monitor; small, genuinely wants to be global
     ];
