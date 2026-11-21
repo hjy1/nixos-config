@@ -1,12 +1,12 @@
 # Fonts.
 #
-# This module is a clean illustration of the Tier 1 / Tier 2 split:
+# This module is a clean illustration of the machine / me split:
 #
 #   WHICH FONTS EXIST          -> here. A font that isn't installed cannot be
 #                                 selected, and missing glyphs are a broken
 #                                 system, not a style preference.
-#   WHICH FONT A THING USES    -> dotfiles/. Terminal font and size are pure
-#                                 taste; see dotfiles/ghostty/config.
+#   WHICH FONT A THING USES    -> home/ (`hms`, no sudo). Terminal font and
+#                                 size are taste; see home/ghostty.nix.
 { config, pkgs, ... }:
 
 {

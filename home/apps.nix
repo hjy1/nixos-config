@@ -4,9 +4,9 @@
 # share/applications/, not guessed - a wrong name here fails silently
 # (clicking a file just does nothing).
 #
-# App SETTINGS are not here. DMS's are linked into dotfiles/ by
-# home/dotfiles.nix. VS Code and Chrome sync themselves through their own
-# accounts (Settings Sync / Chrome Sync), so the repo stays out of their way.
+# Settings for Ghostty, niri and DMS have their own files in home/. VS Code
+# and Chrome sync themselves through their own accounts (Settings Sync /
+# Chrome Sync), so the repo stays out of their way.
 { pkgs, ... }:
 
 {
@@ -18,7 +18,7 @@
     # point VS Code at it explicitly.
     (vscode.override { commandLineArgs = "--password-store=gnome-libsecret"; })
     claude-code
-    ghostty
+    # ghostty is installed by programs.ghostty (home/ghostty.nix)
     loupe      # images
     papers     # PDFs
     mpv

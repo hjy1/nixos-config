@@ -47,7 +47,7 @@
     xwayland-satellite
 
     # GTK3 theme that DMS recolours from the wallpaper (`dms doctor` flags
-    # it as missing). Being installed is Tier 1; selecting it is DMS's job.
+    # it as missing). Installing it is the machine; selecting it is DMS's job.
     adw-gtk3
 
     wl-clipboard

@@ -30,8 +30,7 @@ Three layers, and every file belongs to exactly one.
 | `modules/tailscale.nix` | Tailscale client — `my.tailscale.enable`; once: `sudo tailscale up` |
 | `hosts/gear/` | This machine: hardware scan, flags, `stateVersion` |
 | `hosts/_template/` | Copy this to add a machine (`_` prefix = not a host) |
-| `home/` | **Mine** — standalone home-manager, applied by `hms` with **no sudo**: shell plugins, prompt, git identity, apps, default apps, dotfile links, `dsync` |
-| `dotfiles/` | mutable, git-tracked config — **never needs a rebuild** |
+| `home/` | **Mine** — standalone home-manager, applied by `hms` with **no sudo**: zsh, starship, git, apps, default apps, Ghostty, niri config, DMS settings |
 
 ### The machine vs me — and the sudo rule
 
@@ -41,12 +40,11 @@ Two halves, two commands:
 |---|---|---|---|
 | **the machine** | `configuration.nix`, `modules/`, `hosts/` | `nrs` — `sudo nixos-rebuild switch` | yes |
 | **me** | `home/` (home-manager, standalone) | `hms` — `home-manager switch` | **no** |
-| **my live files** | `dotfiles/` | nothing — saving the file applies it | no |
 
 **The rule, borrowed from Arch:** if on Arch it would need `sudo pacman` or
 `sudo systemctl enable`, it belongs to the machine and `sudo` is fine. If on
 Arch you would just edit a file in your home directory, it must never need
-`sudo` here — so it lives in `home/` or `dotfiles/`.
+`sudo` here — so it lives in `home/`.
 
 So zsh *as the login shell* is the machine (`modules/shell.nix`), but
 starship, autosuggestions, fzf-tab, fzf, zoxide and direnv are me
@@ -95,54 +93,47 @@ that reason — nixpkgs' own `bash.nix` already claims it with `mkDefault`, so a
 second `mkDefault` there fails to evaluate. The comment in that file explains
 it in place.
 
-## What belongs in Nix, and what doesn't
+## How a change is made
 
-The governing rule: **if you'd change it because of your mood, it does not go
-in Nix.** A rebuild is the right price for things that can break the machine.
-It is the wrong price for a prompt colour.
+home-manager owns every config file of mine. There is no separate dotfiles
+directory: to change anything, edit the matching file in `home/` and run
+`hms` (no sudo). The file in `~/.config` is a read-only copy home-manager
+generated, so it cannot drift from the repo — every change *is* a repo change.
 
-Note this is a *different axis* from the three layers above. Layers answer
-"which file defines this option"; tiers answer "how expensive is it to change".
-
-### Tier 1 — declarative Nix (rebuild required, and that's correct)
-
-Structural, breaks things if wrong, changes rarely:
-
-- kernel, bootloader, initrd, `configurationLimit`
-- NVIDIA driver, filesystems, disk layout
-- **which packages exist**
-- services: pipewire, gdm, niri, dms, direnv, zram
-- users, hostname, networking, locale, timezone
-- GC policy, firewall
-- *(in `home/`)* my packages, shell plugins, git identity, default apps
-
-### Tier 2 — `dotfiles/`, mutable, git-tracked (no rebuild)
-
-Cosmetic, tweaked on a whim, wants instant feedback. `home/dotfiles.nix`
-links each file into `~/.config` with `mkOutOfStoreSymlink`, which points at
-the live checkout rather than a read-only store copy: the *links* are
-declarative, the *contents* stay editable.
-
-| File | Controls | Takes effect |
+| To change… | Edit | Then |
 |---|---|---|
-| `dotfiles/starship.toml` | prompt | next prompt |
-| `dotfiles/zsh/local.zsh` | aliases, fzf-tab previews, colours | new shell / `exec zsh` |
-| `dotfiles/niri/config.kdl` | keybinds, column widths, cursor | **instantly** (niri live-reloads) |
-| `dotfiles/ghostty/config` | terminal font, theme | on save |
-| `dotfiles/dms/settings.json` | everything in DMS Settings (`Mod+,`) | DMS writes it itself |
+| Ghostty font, theme, padding | `home/ghostty.nix` | `hms`, then Ctrl+Shift+, in Ghostty |
+| prompt | `home/shell.nix` → `programs.starship.settings` | `hms` |
+| aliases, zsh plugins, history | `home/shell.nix` | `hms`, then `exec zsh` |
+| git identity, gh | `home/git.nix` (name/email come from `me.nix`) | `hms` |
+| my apps, default apps | `home/apps.nix` | `hms` |
+| niri keybinds, layout, cursor | `home/niri/config.kdl` | `hms` — niri reloads itself |
+| DMS: wallpaper, bar, gaps, colours, monitors | DMS Settings (`Mod+,`) | nothing — see below |
+| drivers, services, desktop, fonts, Tailscale | `modules/`, `hosts/` | `nrs` (sudo) |
 
-The last one is written *by the app*: DMS writes through the link (verified),
-so clicking a setting in DMS is a repo change.
+`hms` also validates before it touches anything: Ghostty's config is checked
+with `ghostty +validate-config` and niri's with `niri validate`, so a typo
+fails the switch instead of breaking the desktop.
 
-**Sync.** `dsync` (the `dotfiles-sync` command) commits whatever changed
-under `dotfiles/` and pushes to GitHub. Run it by hand — no timer. It only
-ever touches `dotfiles/` — Nix changes get a deliberate, hand-written commit.
-It refuses to publish anything that looks like a credential and notifies you
-instead, and rebases if another machine pushed first.
+### The one exception: DMS settings
 
-### Tier 3 — not in this repo at all
+DMS saves its own settings whenever you click something in its Settings UI.
+A file home-manager generates is read-only, so DMS could not save. Instead
+`home/dms.nix` has home-manager *link* `~/.config/dms/settings.json` to the
+live file `home/dms/settings.json` in this repo (`mkOutOfStoreSymlink`). DMS
+writes through the link, so clicking a setting changes the repo.
 
-**Apps whose "config" is really a database:**
+**`dsync`** commits that file and pushes. It refuses anything that looks like
+a credential (the repo is public), and rebases if another machine pushed
+first. Run it when you've changed DMS settings you want to keep.
+
+DMS also *generates* `~/.config/niri/dms/*.kdl` and a `dankcolors` Ghostty
+theme from those settings on every start. They are derived, so they are not
+tracked; `home/niri/config.kdl` pulls them in with `include optional=true`.
+
+### Not in this repo at all
+
+**Apps that sync themselves:**
 
 - **Chrome** — the profile is SQLite databases, caches and encrypted
   cookies/passwords, rewritten constantly. Use Chrome Sync (Google account).
@@ -150,10 +141,7 @@ instead, and rebases if another machine pushed first.
   own Settings Sync (sign in with GitHub). Tracking them here too would put
   two syncs on the same files. The flake only installs VS Code and points it
   at gnome-keyring so that sign-in works under niri.
-- GNOME dconf settings (fallback session only)
-- DMS-generated files: `~/.config/niri/dms/*.kdl`, the `dankcolors` Ghostty
-  theme. Derived from `dms/settings.json` on every start, so tracking them
-  would only record noise.
+- GNOME dconf settings (fallback session only).
 
 **Data.** Nix is not a backup system:
 
@@ -176,25 +164,9 @@ not in this repo and not in the Nix store. Three reasons:
 DMS and matugen take a *path*. Point them at `~/Pictures/wallpapers/` and let
 them read a plain mutable file.
 
-The same split applies to themes: **the package** (an icon theme, a cursor
-theme, a font) is Tier 1 because it must exist to be selectable. **The
-selection** is Tier 2 or 3, because it's taste.
-
-`modules/fonts.nix` is the clearest example — which fonts are installed is
-declarative; which font Ghostty uses lives in `dotfiles/ghostty/config`.
-
-### A note on sudo
-
-Only the machine half needs `sudo`, because it activates a system profile —
-inherent, not a Nix quirk. Everything of mine is applied by standalone
-home-manager as my user (`hms`), and `dotfiles/` needs no command at all:
-the links point at the live repo, and the apps reload the files themselves.
-
-### When unsure
-
-Start in `dotfiles/`. Promote to Nix only once you're sure it must be
-identical on every machine. Demotion is easy; discovering you need a rebuild
-to change a colour is the annoying direction.
+The same split applies to themes: **installing** an icon theme, cursor theme
+or font is the machine (`modules/fonts.nix`, `nrs`); **choosing** which one
+Ghostty or niri uses is mine (`home/`, `hms`).
 
 ## Applying
 
@@ -234,8 +206,8 @@ nix run home-manager -- switch -b hm-bak --flake ~/nixos-config
 exec zsh          # pick up the new shell config
 ```
 
-That creates the `dotfiles/` links — no manual `ln -sf`. A file already in a
-link's place is moved aside to `<file>.hm-bak`, never overwritten. Verify:
+That writes every config file of mine — no manual `ln -sf`. A file already
+in the way is moved aside to `<file>.hm-bak`, never overwritten. Verify:
 
 ```bash
 ls -l ~/.config/niri/config.kdl ~/.config/dms/settings.json

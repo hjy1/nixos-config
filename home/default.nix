@@ -5,10 +5,14 @@
 # `sudo pacman` / `systemctl enable`, it is the machine (modules/, `nrs`).
 # If on Arch you would just edit a file in your home directory, it is here.
 #
-#   shell.nix     zsh plugins, prompt, fzf, zoxide, direnv
-#   git.nix       git identity, gh
-#   apps.nix      my applications and default-app choices
-#   dotfiles.nix  links into dotfiles/ (live files), and `dsync`
+# home-manager owns every config file of mine. Edit here, `hms`.
+#
+#   shell.nix    zsh: plugins, aliases, history; starship, fzf, zoxide, direnv
+#   git.nix      git identity, gh
+#   apps.nix     my applications and default-app choices
+#   ghostty.nix  terminal settings
+#   niri.nix     installs niri/config.kdl (validated)
+#   dms.nix      DMS settings - the one live, app-written file - and `dsync`
 { me, ... }:
 
 {
@@ -16,8 +20,13 @@
     ./shell.nix
     ./git.nix
     ./apps.nix
-    ./dotfiles.nix
+    ./ghostty.nix
+    ./niri.nix
+    ./dms.nix
   ];
+
+  # The repo path, for the nrs/hms aliases and scripts.
+  home.sessionVariables.NIXOS_REPO = me.repoPath;
 
   home.username = me.name;
   home.homeDirectory = "/home/${me.name}";
