@@ -21,7 +21,7 @@ Three layers, and every file belongs to exactly one.
 | `configuration.nix` | Portable base system: boot, locale, audio |
 | `modules/user.nix` | The user account (identity from `me.nix`) |
 | `modules/maintenance.nix` | GC, boot-entry cap, fstrim, btrfs scrub |
-| `modules/desktop.nix` | niri + Dux Shell, GDM login, the services DMS needs |
+| `modules/desktop.nix` | niri + Dux Shell, the DMS login screen, the services DMS needs |
 | `modules/shell.nix` | zsh as the login shell — nothing else |
 | `modules/packages.nix` | Base admin tools, system git/neovim, nix-ld |
 | `modules/fonts.nix` | Font packages and the fallback chain |
@@ -216,7 +216,13 @@ Every rebuild after that needs no flag, because the built system now sets it:
 sudo nixos-rebuild switch --flake ~/nixos-config#gear
 ```
 
-At the GDM login screen, **niri** is the session (it's the only one).
+The login screen is DMS's own greeter (it copies your DMS wallpaper and
+theme), and **niri** is the session.
+
+**Changing the login manager** (as the GNOME → DMS-greeter move did) must be
+applied with `sudo nixos-rebuild boot --flake ~/nixos-config` and a reboot,
+not `switch`: a live switch stops the old login manager, and with it the
+session you are running the command from.
 
 Then apply **me** — once, as your user, no sudo. The first time the
 `home-manager` command does not exist yet, so run it from the flake input;
@@ -350,7 +356,7 @@ closure. Turn it on only on a machine with an NVIDIA GPU.
 ### PASSWORDS - do not skip this
 
 A user declared with no password has login **disabled**, not blank. `he` has no
-password in `configuration.nix`, so without one of the fixes below you reach GDM
+password in `configuration.nix`, so without one of the fixes below you reach the login screen
 and find that nothing works.
 
 **With the graphical installer** this is handled — it asks you for a user

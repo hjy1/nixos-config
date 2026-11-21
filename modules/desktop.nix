@@ -1,7 +1,7 @@
-# niri (scrollable-tiling Wayland compositor) + Dux Shell / DMS, with GDM
-# as the login screen. No GNOME desktop: DMS covers its settings, panels and
-# launcher. Recovery if niri ever fails to start: pick an older generation in
-# the boot menu, or log in on a TTY (Ctrl+Alt+F3).
+# niri (scrollable-tiling Wayland compositor) + Dux Shell / DMS, with DMS's
+# own greeter as the login screen. No GNOME: DMS covers its settings, panels
+# and launcher. Recovery if the greeter or niri ever fails: log in on a text
+# console (Ctrl+Alt+F3), or pick an older generation in the boot menu.
 #
 # Not flag-gated: every host so far is a workstation. The day a headless or
 # server host appears, give this module a my.desktop.enable flag exactly the
@@ -13,7 +13,20 @@
   # package, and pins defaultSession = "niri" (via mkDefault).
   programs.niri.enable = true;
 
-  services.displayManager.gdm.enable = lib.mkDefault true;
+  # Login screen: Dux Greeter - DMS's own login UI, running in niri, on top
+  # of greetd. configHome copies my DMS settings, wallpaper and colours
+  # (~/.config/dms, ~/.local/state/dms, ~/.cache/dms) into the greeter each
+  # time greetd starts, so the login screen matches the desktop.
+  services.displayManager.dux-greeter = {
+    enable = true;
+    compositor.name = "niri";
+    configHome = "/home/${me.name}";
+  };
+
+  # Unlock gnome-keyring with the login password, as GDM used to. Without
+  # this the keyring stays locked after login, and anything storing secrets
+  # in it (VS Code's GitHub sign-in) asks for a separate keyring password.
+  security.pam.services.greetd.enableGnomeKeyring = true;
 
   # What the GNOME desktop used to switch on implicitly, and this desktop
   # still uses. Listed explicitly so removing GNOME did not silently take
