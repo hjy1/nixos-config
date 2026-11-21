@@ -34,10 +34,8 @@
     # Base admin tools - things you want in a root shell or over SSH.
     # No `vim`: programs.neovim's vimAlias already provides it, and a real
     # vim here would collide in system-path.
-    jq
     wget
     curl
-    tree
     htop
     unzip
   ];

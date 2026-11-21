@@ -21,7 +21,7 @@ Three layers, and every file belongs to exactly one.
 | `configuration.nix` | Portable base system: boot, locale, audio |
 | `modules/user.nix` | The user account (identity from `me.nix`) |
 | `modules/maintenance.nix` | GC, boot-entry cap, fstrim, btrfs scrub |
-| `modules/desktop.nix` | niri + Dux Shell, GNOME fallback |
+| `modules/desktop.nix` | niri + Dux Shell, GDM login, the services DMS needs |
 | `modules/shell.nix` | zsh as the login shell — nothing else |
 | `modules/packages.nix` | Base admin tools, system git/neovim, nix-ld |
 | `modules/fonts.nix` | Font packages and the fallback chain |
@@ -163,7 +163,6 @@ from its settings on every start. They are derived, so they are not tracked;
   own Settings Sync (sign in with GitHub). Tracking them here too would put
   two syncs on the same files. The flake only installs VS Code and points it
   at gnome-keyring so that sign-in works under niri.
-- GNOME dconf settings (fallback session only).
 
 **Data.** Nix is not a backup system:
 
@@ -199,7 +198,7 @@ the first successful build, so the first two commands have to pass it by hand.
 Chicken-and-egg; it bites everyone once.
 
 ```bash
-# 1. Build without activating — catches problems while GNOME still works
+# 1. Build without activating — catches problems before anything changes
 sudo nixos-rebuild build --flake ~/nixos-config#gear \
   --option extra-experimental-features "nix-command flakes"
 
@@ -217,7 +216,7 @@ Every rebuild after that needs no flag, because the built system now sets it:
 sudo nixos-rebuild switch --flake ~/nixos-config#gear
 ```
 
-At the GDM login screen pick **niri** (it's the default) or **GNOME** (fallback).
+At the GDM login screen, **niri** is the session (it's the only one).
 
 Then apply **me** — once, as your user, no sudo. The first time the
 `home-manager` command does not exist yet, so run it from the flake input;
@@ -247,7 +246,8 @@ bookmarks, extensions and settings.
 
 ## If niri doesn't come up
 
-Pick GNOME at the login screen, then:
+There is no GNOME fallback session any more. Switch to a text console with
+**Ctrl+Alt+F3**, log in, then:
 
 ```bash
 systemctl --user status dms          # is Dux Shell running?
@@ -256,8 +256,9 @@ dms doctor                           # DMS's own dependency check
 niri msg outputs                     # real monitor names for config.kdl
 ```
 
-Worst case, pick the previous generation in systemd-boot at power-on. Nothing
-here is one-way.
+Worst case, pick the previous generation in systemd-boot at power-on — it
+still has GNOME if you need a full desktop to fix things. Nothing here is
+one-way.
 
 ## Adding a second machine
 

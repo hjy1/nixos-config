@@ -76,6 +76,9 @@
   };
 
   home.packages = with pkgs; [
+    jq
+    tree
+    wl-clipboard  # wl-copy / wl-paste
     eza      # ls  - aliased in config/zsh/local.zsh
     bat      # cat - fzf-tab previews
     fd

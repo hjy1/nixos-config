@@ -31,8 +31,11 @@ in
     programs.gamemode.enable = true;
 
     environment.systemPackages = with pkgs; [
+      # System-wide on purpose: Steam runs games inside its own sandbox,
+      # which reliably sees system packages.
       mangohud   # in-game perf overlay; run games with `mangohud %command%`
-      protonup-qt
+      # protonup-qt is a personal app (installs Proton into ~/.steam):
+      # home/apps.nix.
     ];
   };
 }

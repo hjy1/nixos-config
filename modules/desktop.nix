@@ -1,7 +1,7 @@
-# niri (scrollable-tiling Wayland compositor) + Dux Shell / DMS.
-#
-# GNOME is intentionally still here as a login-screen fallback. Once niri
-# is confirmed working, see the "STRIPPING GNOME" note at the bottom.
+# niri (scrollable-tiling Wayland compositor) + Dux Shell / DMS, with GDM
+# as the login screen. No GNOME desktop: DMS covers its settings, panels and
+# launcher. Recovery if niri ever fails to start: pick an older generation in
+# the boot menu, or log in on a TTY (Ctrl+Alt+F3).
 #
 # Not flag-gated: every host so far is a workstation. The day a headless or
 # server host appears, give this module a my.desktop.enable flag exactly the
@@ -13,9 +13,22 @@
   # package, and pins defaultSession = "niri" (via mkDefault).
   programs.niri.enable = true;
 
-  # Fallback desktop. Pick GNOME at the GDM session picker if niri misbehaves.
   services.displayManager.gdm.enable = lib.mkDefault true;
-  services.desktopManager.gnome.enable = lib.mkDefault true;
+
+  # What the GNOME desktop used to switch on implicitly, and this desktop
+  # still uses. Listed explicitly so removing GNOME did not silently take
+  # them away (found by diffing the system with and without GNOME).
+  hardware.bluetooth.enable = true;          # DMS Bluetooth panel
+  services.power-profiles-daemon.enable = true; # DMS power-profile switcher
+  services.upower.enable = true;             # power state DMS reads
+  services.udisks2.enable = true;            # mount USB drives
+  services.gvfs.enable = true;               # Nautilus trash, network shares
+  services.hardware.bolt.enable = true;      # authorise Thunderbolt devices
+  services.gnome.at-spi2-core.enable = true; # stops GTK accessibility warnings
+  services.avahi = {                         # find network printers
+    enable = true;
+    nssmdns4 = true;
+  };
 
   # Dux Shell (formerly DankMaterialShell; the CLI is still `dms`).
   #
@@ -49,32 +62,5 @@
     # GTK3 theme that DMS recolours from the wallpaper (`dms doctor` flags
     # it as missing). Installing it is the machine; selecting it is DMS's job.
     adw-gtk3
-
-    wl-clipboard
-    brightnessctl
-    playerctl
   ];
-
-  # Trim the GNOME app bundle you didn't ask for. Safe to prune while
-  # keeping GNOME itself as a fallback.
-  environment.gnome.excludePackages = with pkgs; [
-    gnome-tour
-    gnome-music
-    gnome-maps
-    gnome-software
-    totem
-    epiphany
-    geary
-    simple-scan
-    yelp
-  ];
-
-  # STRIPPING GNOME, once niri is proven:
-  #   services.desktopManager.gnome.enable = false;   # no mkForce needed
-  # Note that niri still depends on xdg-desktop-portal-gnome and nautilus
-  # for its portals and file chooser, so a few GNOME components stay in the
-  # closure by design. That is expected, not leftover cruft.
-  #
-  # You can also set programs.niri.useNautilus = false; to drop nautilus and
-  # fall back to the GTK file chooser.
 }

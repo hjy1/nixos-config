@@ -15,7 +15,7 @@
 #   apps.nix     my applications and default-app choices
 #   ghostty.nix  Ghostty package + service (settings: config/ghostty/config)
 #   config.nix   links every file in config/ into ~/.config
-{ me, ... }:
+{ config, me, ... }:
 
 {
   imports = [
@@ -35,6 +35,12 @@
   # Installs the `home-manager` command itself, so `hms` keeps working after
   # the first bootstrap (`nix run home-manager -- switch --flake ...`).
   programs.home-manager.enable = true;
+
+  # Where the `home-manager` command looks for its config when run without
+  # --flake. Pointing it at the repo makes plain `home-manager news`,
+  # `home-manager switch` etc. use this flake.
+  xdg.configFile."home-manager".source =
+    config.lib.file.mkOutOfStoreSymlink me.repoPath;
 
   # XDG base directories. Also moves zsh's dotfiles to ~/.config/zsh.
   xdg.enable = true;

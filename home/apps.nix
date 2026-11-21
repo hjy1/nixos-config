@@ -19,10 +19,12 @@
     (vscode.override { commandLineArgs = "--password-store=gnome-libsecret"; })
     claude-code
     # ghostty is installed by programs.ghostty (home/ghostty.nix)
+    nautilus   # files (niri's module provides only its file-picker service)
     loupe      # images
     papers     # PDFs
     mpv
     bilibili
+    protonup-qt  # Proton versions for Steam (Steam itself: modules/gaming.nix)
   ];
 
   xdg.mimeApps = {
@@ -36,7 +38,7 @@
       "x-scheme-handler/unknown" = "google-chrome.desktop";
       "application/xhtml+xml" = "google-chrome.desktop";
 
-      # Files (nautilus comes with programs.niri, for the file chooser)
+      # Files
       "inode/directory" = "org.gnome.Nautilus.desktop";
 
       # Documents
