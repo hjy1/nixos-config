@@ -1,0 +1,137 @@
+{
+    // Privacy: VSCodium already strips Microsoft's telemetry; this also tells
+    // well-behaved extensions to stay quiet (Red Hat's have their own switch).
+    "telemetry.telemetryLevel": "off",
+    "redhat.telemetry.enabled": false,
+    "chat.disableAIFeatures": true,
+
+    // Editor
+    "editor.fontSize": 16,
+    "editor.fontFamily": "JetbrainsMono Nerd Font, HackNerdFontMono, FiraCode Nerd Font",
+    "editor.fontLigatures": true,
+    "editor.allowVariableFontsInAccessibilityMode": true,
+    "editor.wordWrap": "on",
+    "editor.minimap.enabled": false,
+    "editor.formatOnSave": true,
+    "editor.autoClosingBrackets": "always",
+    "editor.cursorSmoothCaretAnimation": "on",
+    "editor.mouseWheelZoom": true,
+    "editor.scrollOnMiddleClick": true,
+    "editor.mouseMiddleClickAction": "ctrlLeftClick",
+    "editor.selectionClipboard": false,
+    "editor.suggest.showStatusBar": true,
+    "editor.suggestSelection": "recentlyUsedByPrefix",
+    "editor.unicodeHighlight.ambiguousCharacters": false,
+    "diffEditor.ignoreTrimWhitespace": false,
+    "diffEditor.codeLens": true,
+    "files.autoSave": "afterDelay",
+    "files.associations": {
+        "*.psi": "d",
+        "*.json": "jsonc"
+    },
+
+    // Workbench / window
+    "workbench.startupEditor": "none",
+    "workbench.layoutControl.enabled": false,
+    "workbench.browser.showInTitleBar": false,
+    "workbench.preferredLightColorTheme": "Quiet Light",
+    "workbench.preferredHighContrastColorTheme": "Dark Modern",
+    "workbench.preferredHighContrastLightColorTheme": "Dark Modern",
+    "workbench.editorAssociations": {
+        "*.pdf": "latex-workshop-pdf-hook",
+        "*.md": "vscode.markdown.editor"
+    },
+    "window.autoDetectColorScheme": true,
+    "window.commandCenter": false,
+    "explorer.confirmDelete": false,
+    "explorer.confirmDragAndDrop": false,
+    "explorer.confirmPasteNative": false,
+    "security.workspace.trust.untrustedFiles": "open",
+    "debug.enableStatusBarColor": false,
+    "markdown.preview.openMarkdownLinks": "inEditor",
+
+    // Terminal
+    "terminal.integrated.defaultProfile.linux": "zsh",
+    "terminal.integrated.fontFamily": "FiraCode Nerd Font Mono, JetBrainsMono Nerd Font Mono",
+    "terminal.integrated.fontLigatures.enabled": true,
+    "terminal.integrated.suggest.enabled": true,
+    "terminal.integrated.enableMultiLinePasteWarning": "never",
+
+    // Git
+    "git.autofetch": true,
+    "git.confirmSync": false,
+    "git.enableSmartCommit": true,
+    "git.openRepositoryInParentFolders": "always",
+
+    // Remote SSH (Open Remote - SSH reads the same keys)
+    "remote.SSH.remotePlatform": {
+        "emu": "linux",
+        "kondor": "linux",
+        "cs527": "linux"
+    },
+
+    // Languages
+    "lean4.alwaysAskBeforeInstallingLeanVersions": false,
+    "vsrocq.path": "vsrocqtop",
+    "haskell.manageHLS": "GHCup",
+    "python.analysis.typeCheckingMode": "standard",
+    "jupyter.askForKernelRestart": false,
+    "tinymist.preview.invertColors": "auto",
+    "makefile.configureOnOpen": false,
+    "[ocaml][ocaml.interface]": {
+        "editor.tabSize": 2,
+        "editor.rulers": [80],
+        "editor.formatOnSave": true
+    },
+
+    // LaTeX Workshop
+    "latex-workshop.linting.chktex.enabled": false,
+    "latex-workshop.linting.chktex.exec.args": ["-wall", "-n22", "-n30", "-e16", "-q", "-n9", "-n3"],
+    "latex-workshop.message.warning.show": false,
+    "latex-workshop.message.error.show": false,
+    "latex-workshop.message.latexlog.exclude": [],
+    "latex-workshop.latex.autoClean.run": "onBuilt",
+    "latex-workshop.view.pdf.internal.synctex.keybinding": "double-click",
+    "latex-workshop.view.pdf.invert": 0.9,
+    "latex-workshop.view.pdf.invertMode.brightness": 2,
+    "latex-workshop.view.pdf.invertMode.enabled": "auto",
+    "latex-workshop.latex.tools": [
+        { "name": "latexmk", "command": "latexmk", "env": {},
+          "args": ["--shell-escape", "-synctex=1", "-interaction=nonstopmode", "-file-line-error", "-pdf", "-outdir=%OUTDIR%", "%DOC%"] },
+        { "name": "lualatexmk", "command": "latexmk", "env": {},
+          "args": ["-synctex=1", "--shell-escape", "-interaction=nonstopmode", "-file-line-error", "-lualatex", "-outdir=%OUTDIR%", "%DOC%"] },
+        { "name": "xelatexmk", "command": "latexmk", "env": {},
+          "args": ["-synctex=1", "--shell-escape", "-interaction=nonstopmode", "-file-line-error", "-xelatex", "-outdir=%OUTDIR%", "%DOC%"] },
+        { "name": "latexmk_rconly", "command": "latexmk", "env": {}, "args": ["%DOC%"] },
+        { "name": "pdflatex", "command": "pdflatex", "env": {},
+          "args": ["-synctex=1", "-interaction=nonstopmode", "-file-line-error", "--shell-escape", "%DOC%"] },
+        { "name": "bibtex", "command": "bibtex", "env": {}, "args": ["%DOCFILE%"] },
+        { "name": "biber", "command": "biber", "args": ["%DOCFILE%"] },
+        { "name": "rnw2tex", "command": "Rscript", "env": {},
+          "args": ["-e", "knitr::opts_knit$set(concordance = TRUE); knitr::knit('%DOCFILE_EXT%')"] },
+        { "name": "jnw2tex", "command": "julia", "env": {},
+          "args": ["-e", "using Weave; weave(\"%DOC_EXT%\", doctype=\"tex\")"] },
+        { "name": "jnw2texminted", "command": "julia", "env": {},
+          "args": ["-e", "using Weave; weave(\"%DOC_EXT%\", doctype=\"texminted\")"] },
+        { "name": "pnw2tex", "command": "pweave", "env": {}, "args": ["-f", "tex", "%DOC_EXT%"] },
+        { "name": "pnw2texminted", "command": "pweave", "env": {}, "args": ["-f", "texminted", "%DOC_EXT%"] },
+        { "name": "tectonic", "command": "tectonic", "env": {}, "args": ["--synctex", "--keep-logs", "--print", "%DOC%.tex"] }
+    ],
+    "latex-workshop.latex.recipes": [
+        { "name": "latexmk", "tools": ["latexmk"] },
+        { "name": "latexmk (latexmkrc)", "tools": ["latexmk_rconly"] },
+        { "name": "latexmk (lualatex)", "tools": ["lualatexmk"] },
+        { "name": "latexmk (xelatex)", "tools": ["xelatexmk"] },
+        { "name": "pdflatex -> bibtex -> pdflatex * 2", "tools": ["pdflatex", "bibtex", "pdflatex", "pdflatex"] },
+        { "name": "pdflatex -> biber -> biber -> pdflatex*2", "tools": ["pdflatex", "biber", "biber", "pdflatex", "pdflatex"] },
+        { "name": "xelatex -> biber -> biber -> xelatex*2", "tools": ["xelatex", "biber", "biber", "xelatex", "xelatex"] },
+        { "name": "Compile Rnw files", "tools": ["rnw2tex", "latexmk"] },
+        { "name": "Compile Jnw files", "tools": ["jnw2tex", "latexmk"] },
+        { "name": "Compile Pnw files", "tools": ["pnw2tex", "latexmk"] },
+        { "name": "tectonic", "tools": ["tectonic"] }
+    ],
+
+    // Claude Code
+    "claudeCode.preferredLocation": "panel",
+    "claudeCode.useTerminal": true
+}

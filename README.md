@@ -147,7 +147,17 @@ One thing to know: some apps save by *replacing* their file (write a temp
 file, rename it over the original). That turns the link into a plain file,
 and the repo stops seeing changes. `ls -l ~/.config/<app>/<file>` shows
 which it is; to fix, copy the file over the one in `home/config/`, delete
-it from `~/.config`, and `hms`.
+it from `~/.config`, and `hms`. Don't run `hms` first: it moves the plain
+file aside to `<file>.hm-bak` and restores the link, so the change looks
+reverted (it is in the `.hm-bak`; `hms` says "moved to …hm-bak").
+
+Command-line tools that write a config do the same. `starship preset X -o
+~/.config/starship.toml --force` replaces the link; a shell redirect writes
+*through* it, so use that:
+
+```bash
+starship preset nerd-font-symbols > ~/.config/starship.toml
+```
 
 DMS *generates* `~/.config/niri/dms/*.kdl` and a `dankcolors` Ghostty theme
 from its settings on every start. They are derived, so they are not tracked;
@@ -159,10 +169,9 @@ from its settings on every start. They are derived, so they are not tracked;
 
 - **Chrome** — the profile is SQLite databases, caches and encrypted
   cookies/passwords, rewritten constantly. Use Chrome Sync (Google account).
-- **VS Code** — settings, keybindings and extensions sync through VS Code's
-  own Settings Sync (sign in with GitHub). Tracking them here too would put
-  two syncs on the same files. The flake only installs VS Code and points it
-  at gnome-keyring so that sign-in works under niri.
+- **VSCodium extensions** — installed from Open VSX inside the editor, where
+  they auto-update. (Its settings, keybindings and snippets *are* tracked, in
+  `home/config/VSCodium/User/`.)
 
 **Data.** Nix is not a backup system:
 
@@ -249,8 +258,8 @@ gh auth login            # GitHub, then SSH key upload when asked
 sudo tailscale up        # opens a login URL
 ```
 
-Chrome and VS Code: sign in inside the apps; their own sync restores
-bookmarks, extensions and settings.
+Chrome: sign in; Chrome Sync restores bookmarks and settings. VSCodium:
+reinstall extensions from Open VSX (Extensions view).
 
 ## If niri doesn't come up
 

@@ -4,19 +4,24 @@
 # share/applications/, not guessed - a wrong name here fails silently
 # (clicking a file just does nothing).
 #
-# Settings for Ghostty, niri and DMS are live files in home/config/. VS Code
-# and Chrome sync themselves through their own accounts (Settings Sync /
-# Chrome Sync), so the repo stays out of their way.
+# Settings for Ghostty, niri, DMS and VSCodium are live files in home/config/.
+# Chrome syncs itself through its own account (Chrome Sync), so the repo stays
+# out of its way.
 { pkgs, ... }:
 
 {
   home.packages = with pkgs; [
     google-chrome
-    # VS Code picks its secret store from XDG_CURRENT_DESKTOP, does not know
+    # VSCodium: VS Code built from the MIT source, without Microsoft's
+    # license, telemetry or Marketplace. Extensions come from Open VSX,
+    # installed inside the editor (they auto-update; nixpkgs' copies lag).
+    # Settings: home/config/VSCodium/User/.
+    #
+    # It picks its secret store from XDG_CURRENT_DESKTOP, does not know
     # "niri", and falls back to asking for "weaker encryption" - which breaks
-    # GitHub sign-in. gnome-keyring is running (programs.niri enables it), so
-    # point VS Code at it explicitly.
-    (vscode.override { commandLineArgs = "--password-store=gnome-libsecret"; })
+    # extension sign-ins. gnome-keyring is running (programs.niri enables
+    # it), so point it there explicitly.
+    (vscodium.override { commandLineArgs = "--password-store=gnome-libsecret"; })
     claude-code
     # ghostty is installed by programs.ghostty (home/ghostty.nix)
     nautilus   # files (niri's module provides only its file-picker service)
