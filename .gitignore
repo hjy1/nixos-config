@@ -1,2 +1,5 @@
 result
 result-*
+
+# Claude Code local state (worktrees etc.)
+.claude/
