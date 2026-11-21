@@ -232,7 +232,7 @@ nix-shell -p git
 
 # Clone to ~/nixos-config specifically: the dotfile symlinks in
 # modules/shell.nix point at that path and dangle anywhere else.
-git clone https://github.com/joure5501/nixos-config ~/nixos-config && cd ~/nixos-config
+git clone https://github.com/hjy1/nixos-config ~/nixos-config && cd ~/nixos-config
 
 mkdir -p hosts/<name>
 cp /etc/nixos/hardware-configuration.nix hosts/<name>/
