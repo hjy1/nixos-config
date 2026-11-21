@@ -13,14 +13,15 @@ alias ll='eza -l --git --group-directories-first'
 alias la='eza -la --git --group-directories-first'
 alias lt='eza --tree --level=2'
 
-# This config. $NIXOS_REPO is set by home/dotfiles.nix from me.nix, so the
+# This config. $NIXOS_REPO is set by home/dotfiles.nix from me.nix (the
+# fallback only matters before the first home-manager switch), so the
 # checkout path is never hard-coded here. No `#<host>` needed: flake.nix
 # names every host after its directory.
-alias nrs='sudo nixos-rebuild switch --flake "$NIXOS_REPO"'
-alias nrb='sudo nixos-rebuild build  --flake "$NIXOS_REPO"'
-alias nfu='cd "$NIXOS_REPO" && nix flake update'
+alias nrs='sudo nixos-rebuild switch --flake "${NIXOS_REPO:-$HOME/nixos-config}"'
+alias nrb='sudo nixos-rebuild build  --flake "${NIXOS_REPO:-$HOME/nixos-config}"'
+alias nfu='cd "${NIXOS_REPO:-$HOME/nixos-config}" && nix flake update'
 alias ngc='sudo nix-collect-garbage --delete-older-than 30d'
-alias cfg='cd "$NIXOS_REPO"'
+alias cfg='cd "${NIXOS_REPO:-$HOME/nixos-config}"'
 alias dsync='dotfiles-sync'   # push dotfile changes now instead of waiting
 
 # ------------------------------------------------------- fzf-tab cosmetics ---
