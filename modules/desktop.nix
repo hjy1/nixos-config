@@ -58,11 +58,17 @@
   # hardware.i2c (enabled by the module above) gives to the i2c group.
   users.users.${me.name}.extraGroups = [ "i2c" ];
 
-  # Make Electron/Chromium apps run as native Wayland clients instead of
-  # going through XWayland. Without this, VSCode and bilibili (both Electron)
-  # render blurry on HiDPI, ignore fractional scaling, and have worse input
-  # latency under niri. Single highest-value line in this file.
-  environment.sessionVariables.NIXOS_OZONE_WL = "1";
+  # NO NIXOS_OZONE_WL here, on purpose. Chromium >= 140 (so every Electron
+  # >= 38 and Chrome) already runs as a native Wayland client when
+  # WAYLAND_DISPLAY is set - checked: VS Code 1.146 (Electron 43) gets
+  # --ozone-platform=wayland without it. The variable only made the nixpkgs
+  # wrappers (code, google-chrome, bilibili) append Chromium switches to the
+  # command line, which VS Code's launcher prints as "not in the list of
+  # known options" warnings on every `code .`.
+  #
+  # If you add an input method (fcitx5/ibus) later, Chromium apps need
+  # --enable-wayland-ime per app: `<pkg>.override { commandLineArgs = ...; }`
+  # in home/apps.nix.
 
   environment.systemPackages = with pkgs; [
     # dux-shell, quickshell, matugen and cava come from programs.dux-shell.
