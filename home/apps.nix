@@ -12,7 +12,11 @@
 {
   home.packages = with pkgs; [
     google-chrome
-    vscode
+    # VS Code picks its secret store from XDG_CURRENT_DESKTOP, does not know
+    # "niri", and falls back to asking for "weaker encryption" - which breaks
+    # GitHub sign-in. gnome-keyring is running (programs.niri enables it), so
+    # point VS Code at it explicitly.
+    (vscode.override { commandLineArgs = "--password-store=gnome-libsecret"; })
     claude-code
     ghostty
     loupe      # images
