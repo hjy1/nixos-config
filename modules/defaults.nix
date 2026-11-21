@@ -45,6 +45,13 @@
 
   environment.sessionVariables = {
     BROWSER = "google-chrome-stable";
+    # gh runs the browser command and WAITS for it to exit. With BROWSER
+    # above and Chrome not already open, that Chrome becomes gh's child and
+    # `gh auth login` hangs after GitHub says "you're all set" - until you
+    # close the browser. `gio open` hands the URL to the default handler
+    # (the mime entries above) and returns at once. Full store path so it
+    # does not depend on GNOME being installed.
+    GH_BROWSER = "${pkgs.glib.bin}/bin/gio open";
     TERMINAL = "ghostty";
     # EDITOR is already set to nvim by programs.neovim.defaultEditor
   };
