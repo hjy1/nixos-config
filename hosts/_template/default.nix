@@ -14,6 +14,7 @@
   # my.nvidia.enable = true;   # only on a machine with an NVIDIA card:
                                # multi-GB CUDA/driver closure.
   # my.gaming.enable = true;
+  # my.tailscale.enable = true;   # then once: sudo tailscale up
 
   # CHANGE ME to the NixOS release you are installing this machine with,
   # e.g. "26.11". It is a record of the install, not a version to keep

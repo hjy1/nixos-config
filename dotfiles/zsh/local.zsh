@@ -22,7 +22,7 @@ alias nrb='sudo nixos-rebuild build  --flake "${NIXOS_REPO:-$HOME/nixos-config}"
 alias nfu='cd "${NIXOS_REPO:-$HOME/nixos-config}" && nix flake update'
 alias ngc='sudo nix-collect-garbage --delete-older-than 30d'
 alias cfg='cd "${NIXOS_REPO:-$HOME/nixos-config}"'
-alias dsync='dotfiles-sync'   # push dotfile changes now instead of waiting
+alias dsync='dotfiles-sync'   # commit + push changes under dotfiles/
 
 # ------------------------------------------------------- fzf-tab cosmetics ---
 # Preview pane contents. Purely taste; tweak at will.

@@ -27,6 +27,7 @@ Three layers, and every file belongs to exactly one.
 | `modules/fonts.nix` | Font packages and the fallback chain |
 | `modules/nvidia.nix` | RTX drivers — `my.nvidia.enable` |
 | `modules/gaming.nix` | Steam, gamemode — `my.gaming.enable` |
+| `modules/tailscale.nix` | Tailscale client — `my.tailscale.enable`; once: `sudo tailscale up` |
 | `hosts/gear/` | This machine: hardware scan, flags, `stateVersion` |
 | `hosts/_template/` | Copy this to add a machine (`_` prefix = not a host) |
 | `home/` | **Mine** (home-manager): shell plugins, prompt, git identity, apps, default apps, dotfile links, auto-sync |
@@ -100,7 +101,7 @@ Structural, breaks things if wrong, changes rarely:
 - GC policy, firewall
 - *(in `home/`)* my packages, shell plugins, git identity, default apps
 
-### Tier 2 — `dotfiles/`, mutable, git-tracked, auto-synced (no rebuild)
+### Tier 2 — `dotfiles/`, mutable, git-tracked (no rebuild)
 
 Cosmetic, tweaked on a whim, wants instant feedback. `home/dotfiles.nix`
 links each file into `~/.config` with `mkOutOfStoreSymlink`, which points at
@@ -119,12 +120,12 @@ declarative, the *contents* stay editable.
 The last two are written *by the apps*. DMS and VS Code write through the
 link, so clicking a setting is a repo change — verified for DMS.
 
-**Auto-sync.** A user timer (`dotfiles-sync`, every 10 min; `dsync` to run it
-now) commits whatever changed under `dotfiles/` and pushes to GitHub. It only
+**Sync.** `dsync` (the `dotfiles-sync` command) commits whatever changed
+under `dotfiles/` and pushes to GitHub. Run it by hand — no timer. It only
 ever touches `dotfiles/` — Nix changes get a deliberate, hand-written commit.
 It refuses to publish anything that looks like a credential and notifies you
 instead, and rebases if another machine pushed first. `vscode/extensions.txt`
-is refreshed from `code --list-extensions` on every run; on a new machine a
+is refreshed from `code --list-extensions` on every `dsync`; on a new machine a
 login service installs everything listed.
 
 ### Tier 3 — not in this repo at all
@@ -215,7 +216,7 @@ first login and the links start resolving. Verify with:
 
 ```bash
 ls -l ~/.config/niri/config.kdl ~/.config/dms/settings.json
-systemctl --user status dotfiles-sync.timer
+dsync        # commit + push anything changed under dotfiles/
 ```
 
 A file that was already in a link's place is moved aside to `<file>.hm-bak`,

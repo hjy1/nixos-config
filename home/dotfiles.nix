@@ -6,9 +6,9 @@
 #      in the repo and apply without a rebuild.
 #   2. CLONE. On a fresh machine the repo is cloned on first login if it is
 #      missing, so the links resolve with no manual step.
-#   3. SYNC. A timer commits whatever changed under dotfiles/ and pushes it.
-#      Only dotfiles/ - Nix changes are structural and get a deliberate,
-#      hand-written commit.
+#   3. SYNC. `dotfiles-sync` (alias `dsync`) commits whatever changed under
+#      dotfiles/ and pushes it - run by hand, no timer. Only dotfiles/: Nix
+#      changes are structural and get a deliberate, hand-written commit.
 { config, osConfig, pkgs, lib, ... }:
 
 let
@@ -76,7 +76,7 @@ in
 {
   xdg.configFile = lib.mapAttrs (_: target: { source = live target; }) links;
 
-  home.packages = [ sync ];   # also runnable by hand: `dotfiles-sync`
+  home.packages = [ sync ];   # `dotfiles-sync`, aliased to `dsync`
 
   # The repo path, for aliases and scripts - so nothing in dotfiles/ has to
   # hard-code where the checkout lives.
@@ -101,22 +101,6 @@ in
       '');
     };
     Install.WantedBy = [ "default.target" ];
-  };
-
-  systemd.user.services.dotfiles-sync = {
-    Unit.Description = "Commit and push changes under nixos-config/dotfiles";
-    Service = {
-      Type = "oneshot";
-      ExecStart = "${sync}/bin/dotfiles-sync";
-    };
-  };
-  systemd.user.timers.dotfiles-sync = {
-    Unit.Description = "Sync dotfiles to GitHub every 10 minutes";
-    Timer = {
-      OnBootSec = "5min";
-      OnUnitActiveSec = "10min";
-    };
-    Install.WantedBy = [ "timers.target" ];
   };
 
   # The other half of the extensions list: install anything listed but

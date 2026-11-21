@@ -13,6 +13,7 @@
 
   my.nvidia.enable = true;   # RTX 50-series (Blackwell)
   my.gaming.enable = true;
+  my.tailscale.enable = true;
 
   # Which NixOS release first installed THIS machine. Per-host by definition.
   # Do NOT change it, even though the system now tracks unstable.

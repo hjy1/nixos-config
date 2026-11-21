@@ -93,6 +93,7 @@
             ./modules/nvidia.nix
             ./modules/packages.nix
             ./modules/shell.nix
+            ./modules/tailscale.nix
 
             # Host layer - hardware, disks, and the flags.
             (./hosts + "/${name}")
