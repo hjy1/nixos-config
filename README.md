@@ -15,20 +15,31 @@ Three layers, and every file belongs to exactly one.
 
 | Path | Purpose |
 |---|---|
+| `me.nix` | **Who this is for** — name, email, GitHub account. The only file with personal identity; everything else derives from it |
 | `flake.nix` | Inputs, the shared module list, and host auto-discovery |
 | `flake.lock` | Exact commit pins — **commit this** |
-| `configuration.nix` | Portable base system: boot, locale, audio, users |
+| `configuration.nix` | Portable base system: boot, locale, audio |
+| `modules/user.nix` | The account, `my.repo.*` options, and the home-manager hook |
 | `modules/maintenance.nix` | GC, boot-entry cap, fstrim, btrfs scrub |
 | `modules/desktop.nix` | niri + Dux Shell, GNOME fallback |
-| `modules/shell.nix` | zsh, starship, fzf, direnv, the `dotfiles/` symlinks |
-| `modules/packages.nix` | General software |
-| `modules/defaults.nix` | Default applications and mime handlers |
+| `modules/shell.nix` | zsh as the login shell — nothing else |
+| `modules/packages.nix` | Base admin tools, system git/neovim, nix-ld |
 | `modules/fonts.nix` | Font packages and the fallback chain |
 | `modules/nvidia.nix` | RTX drivers — `my.nvidia.enable` |
 | `modules/gaming.nix` | Steam, gamemode — `my.gaming.enable` |
 | `hosts/gear/` | This machine: hardware scan, flags, `stateVersion` |
 | `hosts/_template/` | Copy this to add a machine (`_` prefix = not a host) |
+| `home/` | **Mine** (home-manager): shell plugins, prompt, git identity, apps, default apps, dotfile links, auto-sync |
 | `dotfiles/` | mutable, git-tracked config — **never needs a rebuild** |
+
+### System vs mine
+
+Orthogonal to the layers: **`modules/` is the machine, `home/` is me.**
+zsh being the login shell is a system fact (`modules/shell.nix`); starship,
+autosuggestions, fzf-tab, fzf, zoxide and direnv are my preferences and live
+in `home/shell.nix`. A second user on this machine gets a working zsh and
+none of my setup. Rule of thumb: if root or another user needs it, it's
+`modules/`; if it's about how *I* like to work, it's `home/`.
 
 Two things are deliberately absent from the host layer: the **module list** (it
 is identical for every host, in `flake.nix`) and the **hostname** (derived from
@@ -86,35 +97,46 @@ Structural, breaks things if wrong, changes rarely:
 - **which packages exist**
 - services: pipewire, gdm, niri, dms, direnv, zram
 - users, hostname, networking, locale, timezone
-- GC policy, firewall, mime defaults
+- GC policy, firewall
+- *(in `home/`)* my packages, shell plugins, git identity, default apps
 
-### Tier 2 — `dotfiles/`, mutable and git-tracked (no rebuild)
+### Tier 2 — `dotfiles/`, mutable, git-tracked, auto-synced (no rebuild)
 
-Cosmetic, tweaked on a whim, wants instant feedback. Symlinked into
-`~/.config` by `systemd.user.tmpfiles` rules in `modules/shell.nix`, so the
-*links* are declarative while the *contents* stay editable.
+Cosmetic, tweaked on a whim, wants instant feedback. `home/dotfiles.nix`
+links each file into `~/.config` with `mkOutOfStoreSymlink`, which points at
+the live checkout rather than a read-only store copy: the *links* are
+declarative, the *contents* stay editable.
 
 | File | Controls | Takes effect |
 |---|---|---|
 | `dotfiles/starship.toml` | prompt | next prompt |
 | `dotfiles/zsh/local.zsh` | aliases, fzf-tab previews, colours | new shell / `exec zsh` |
 | `dotfiles/niri/config.kdl` | keybinds, column widths, cursor | **instantly** (niri live-reloads) |
+| `dotfiles/ghostty/config` | terminal font, theme | on save |
+| `dotfiles/dms/settings.json` | everything in DMS Settings (`Mod+,`) | DMS writes it itself |
+| `dotfiles/vscode/` | VS Code settings, keybindings, extension list | VS Code writes it itself |
 
-Edit these directly. `git diff` sees the change; no `nixos-rebuild` involved.
+The last two are written *by the apps*. DMS and VS Code write through the
+link, so clicking a setting is a repo change — verified for DMS.
+
+**Auto-sync.** A user timer (`dotfiles-sync`, every 10 min; `dsync` to run it
+now) commits whatever changed under `dotfiles/` and pushes to GitHub. It only
+ever touches `dotfiles/` — Nix changes get a deliberate, hand-written commit.
+It refuses to publish anything that looks like a credential and notifies you
+instead, and rebases if another machine pushed first. `vscode/extensions.txt`
+is refreshed from `code --list-extensions` on every run; on a new machine a
+login service installs everything listed.
 
 ### Tier 3 — not in this repo at all
 
-**Apps that manage their own config.** Declaring these means fighting them
-every time they hit "save":
+**Apps whose "config" is really a database:**
 
-- **DMS / Dux Shell** — theming, wallpaper, bar layout, monitors, gaps. It
-  writes `~/.config/dms/` and generates `~/.config/niri/dms/*.kdl`, which
-  `config.kdl` pulls in with `include optional=true`. `matugen` derives
-  palettes from your wallpaper. Change these in DMS Settings (`Mod+,`), not
-  in git.
-- GNOME dconf settings
-- VSCode `settings.json` and extensions
-- Chrome profile, extensions, bookmarks
+- **Chrome** — the profile is SQLite databases, caches and encrypted
+  cookies/passwords, rewritten constantly. Use Chrome Sync (Google account).
+- GNOME dconf settings (fallback session only)
+- DMS-generated files: `~/.config/niri/dms/*.kdl`, the `dankcolors` Ghostty
+  theme. Derived from `dms/settings.json` on every start, so tracking them
+  would only record noise.
 
 **Data.** Nix is not a backup system:
 
@@ -147,14 +169,9 @@ declarative; which font Ghostty uses lives in `dotfiles/ghostty/config`.
 ### A note on sudo
 
 Tier 1 needs `sudo` because it activates a system profile — that's inherent,
-not a Nix quirk. Tier 2 never does: the files are yours, and the apps reload
-them live. That's the real reason the split matters day to day.
-
-If you want *declarative* user config **without** sudo, that is what
-home-manager in **standalone** mode gives you (`home-manager switch`, no
-root, rebuilds only your user generation in seconds). Note the trap: wiring
-home-manager in as a NixOS module puts it back behind `sudo nixos-rebuild`.
-Standalone is the mode that solves this problem; the module is not.
+not a Nix quirk. home-manager is wired in as a NixOS module, so adding a
+*user* package or plugin also goes through `nrs`. Tier 2 never does: the
+links point at the live repo, and the apps reload the files themselves.
 
 ### When unsure
 
@@ -191,20 +208,18 @@ sudo nixos-rebuild switch --flake ~/nixos-config#gear
 
 At the GDM login screen pick **niri** (it's the default) or **GNOME** (fallback).
 
-The `dotfiles/` symlinks are created for you by the `systemd.user.tmpfiles`
-rules in `modules/shell.nix` — no manual `ln -sf`. They appear on your next
-login; verify with:
+The `dotfiles/` links are created by home-manager during the switch — no
+manual `ln -sf`. If the repo is not at `my.repo.path` yet (a fresh install
+that never cloned it), the `nixos-config-clone` user service clones it on
+first login and the links start resolving. Verify with:
 
 ```bash
-ls -l ~/.config/niri/config.kdl ~/.config/starship.toml ~/.config/zsh/local.zsh
+ls -l ~/.config/niri/config.kdl ~/.config/dms/settings.json
+systemctl --user status dotfiles-sync.timer
 ```
 
-Each should point into `~/nixos-config/dotfiles/`. If one is missing, force
-the rules immediately rather than logging out:
-
-```bash
-systemd-tmpfiles --user --create
-```
+A file that was already in a link's place is moved aside to `<file>.hm-bak`,
+never overwritten.
 
 ## If niri doesn't come up
 
@@ -230,8 +245,8 @@ Install a stock system with the graphical ISO, boot in, then:
 export NIX_CONFIG="experimental-features = nix-command flakes"
 nix-shell -p git
 
-# Clone to ~/nixos-config specifically: the dotfile symlinks in
-# modules/shell.nix point at that path and dangle anywhere else.
+# Clone to my.repo.path (default ~/nixos-config, set in modules/user.nix):
+# every dotfile link points there. Skip this and the first login clones it.
 git clone https://github.com/hjy1/nixos-config ~/nixos-config && cd ~/nixos-config
 
 mkdir -p hosts/<name>

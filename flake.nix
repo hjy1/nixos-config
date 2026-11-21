@@ -1,8 +1,15 @@
 {
-  description = "NixOS - niri + Dux Shell. Hosts auto-discovered from ./hosts";
+  description = "NixOS - niri + Dux Shell. System in modules/, me in home/, hosts auto-discovered";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+
+    # Per-user layer: your shell plugins, prompt, git identity, apps and the
+    # dotfile links. Follows nixpkgs so there is one package set, not two.
+    home-manager = {
+      url = "github:nix-community/home-manager";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
 
     disko = {
       url = "github:nix-community/disko";
@@ -10,7 +17,7 @@
     };
   };
 
-  outputs = { self, nixpkgs, disko, ... }@inputs:
+  outputs = { self, nixpkgs, disko, home-manager, ... }@inputs:
     let
       system = "x86_64-linux";
       lib = nixpkgs.lib;
@@ -66,8 +73,12 @@
             # machine's name. mkDefault, so a host can disagree if it must.
             { networking.hostName = lib.mkDefault name; }
 
+            # Who this is for - the only file with personal identity.
+            ./me.nix
+
             # Base layer - unconditional on every host.
             ./configuration.nix
+            ./modules/user.nix      # the account + home-manager (home/)
             ./modules/maintenance.nix
 
             # Feature layer - imported everywhere, so every option below
@@ -76,7 +87,6 @@
             # features by setting flags, NOT by curating an import list:
             # curating the list is what let hosts/gear and hosts/_template
             # drift into two different systems.
-            ./modules/defaults.nix
             ./modules/desktop.nix
             ./modules/fonts.nix
             ./modules/gaming.nix

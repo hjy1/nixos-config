@@ -1,0 +1,10 @@
+// VS Code user settings. Linked from ~/.config/Code/User/settings.json, so
+// changes made in the Settings UI land here and are auto-synced to GitHub.
+// Don't put tokens here - the repo is public (the sync refuses anything that
+// looks like a credential).
+{
+  // niri has no title bars; VS Code draws its own.
+  "window.titleBarStyle": "custom",
+  "editor.fontFamily": "'JetBrainsMono Nerd Font', monospace",
+  "terminal.integrated.defaultProfile.linux": "zsh"
+}

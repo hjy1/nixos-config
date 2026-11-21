@@ -1,21 +1,12 @@
-# General software.
+# System-wide software: what an administrator (or root, or a second user)
+# needs on this machine regardless of who logs in. My own applications live
+# in home/apps.nix; my git identity in home/git.nix.
 { config, pkgs, ... }:
 
 {
-  programs.git = {
-    enable = true;
-    config = {
-      init.defaultBranch = "main";
-      user.name = "Jiayou He";
-      user.email = "forever56946@gmail.com";
-      # git asks gh for GitHub HTTPS credentials, so `gh auth login` once is
-      # all a fresh machine needs. Same thing `gh auth setup-git` would write
-      # to ~/.gitconfig, but declared - so it survives a reinstall. The
-      # empty helper first clears any inherited helper for this host.
-      credential."https://github.com".helper = [ "" "!gh auth git-credential" ];
-      credential."https://gist.github.com".helper = [ "" "!gh auth git-credential" ];
-    };
-  };
+  # git system-wide: the flake, root and nixos-rebuild need it. WHO commits
+  # is per-user (home/git.nix).
+  programs.git.enable = true;
 
   # GitHub's SSH host key, so the first `git push` over SSH on a fresh
   # machine doesn't die with "Host key verification failed" (a
@@ -25,6 +16,7 @@
   programs.ssh.knownHosts."github.com".publicKey =
     "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
 
+  # System editor: what sudoedit, git-as-root and a rescue shell get.
   programs.neovim = {
     enable = true;
     defaultEditor = true;
@@ -39,30 +31,14 @@
   programs.nix-ld.enable = true;
 
   environment.systemPackages = with pkgs; [
-    # Editors / tooling
-    # No `vim` here: programs.neovim above sets vimAlias, and a real vim in
-    # this list collides with it in system-path. buildEnv has
-    # ignoreCollisions = true, so the loser is dropped with only a warning -
-    # and which one wins depends on module order. Leave nvim unopposed.
-    # ripgrep and fd live in modules/shell.nix, not duplicated here.
-    vscode
-    claude-code      # 2.1.327 on unstable, vs 2.1.223 frozen in 26.05
-    gh               # GitHub CLI; also git's credential helper (above)
-    jq               # was missing; your statusline and plenty else want it
+    # Base admin tools - things you want in a root shell or over SSH.
+    # No `vim`: programs.neovim's vimAlias already provides it, and a real
+    # vim here would collide in system-path.
+    jq
     wget
     curl
     tree
     htop
     unzip
-
-    # Terminal
-    ghostty
-
-    # Media / entertainment
-    bilibili
-    mpv
   ];
-
-  # Ghostty is the terminal DMS and niri will spawn by default; nothing to
-  # configure here, but note your niri config.kdl decides the keybind.
 }

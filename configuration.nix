@@ -76,11 +76,7 @@
     pulse.enable = true;
   };
 
-  users.users."he" = {
-    isNormalUser = true;
-    description = "Jiayou He";
-    extraGroups = [ "networkmanager" "wheel" ];
-  };
+  # The user account lives in modules/user.nix, built from me.nix.
 
   # vscode, nvidia drivers, steam, bilibili and CUDA are all unfree.
   nixpkgs.config.allowUnfree = true;

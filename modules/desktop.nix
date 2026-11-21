@@ -30,7 +30,7 @@
 
   # DDC/CI brightness for external monitors goes through /dev/i2c-*, which
   # hardware.i2c (enabled by the module above) gives to the i2c group.
-  users.users."he".extraGroups = [ "i2c" ];
+  users.users.${config.my.user.name}.extraGroups = [ "i2c" ];
 
   # Make Electron/Chromium apps run as native Wayland clients instead of
   # going through XWayland. Without this, VSCode and bilibili (both Electron)
