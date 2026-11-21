@@ -1,10 +1,7 @@
 # My git identity and GitHub tooling. git itself is installed system-wide
 # (modules/packages.nix) - root and the flake need it - but who I am is mine.
-{ osConfig, pkgs, ... }:
+{ me, pkgs, ... }:
 
-let
-  me = osConfig.my.user;
-in
 {
   programs.git = {
     enable = true;

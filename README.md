@@ -19,7 +19,7 @@ Three layers, and every file belongs to exactly one.
 | `flake.nix` | Inputs, the shared module list, and host auto-discovery |
 | `flake.lock` | Exact commit pins — **commit this** |
 | `configuration.nix` | Portable base system: boot, locale, audio |
-| `modules/user.nix` | The account, `my.repo.*` options, and the home-manager hook |
+| `modules/user.nix` | The user account (identity from `me.nix`) |
 | `modules/maintenance.nix` | GC, boot-entry cap, fstrim, btrfs scrub |
 | `modules/desktop.nix` | niri + Dux Shell, GNOME fallback |
 | `modules/shell.nix` | zsh as the login shell — nothing else |
@@ -30,17 +30,32 @@ Three layers, and every file belongs to exactly one.
 | `modules/tailscale.nix` | Tailscale client — `my.tailscale.enable`; once: `sudo tailscale up` |
 | `hosts/gear/` | This machine: hardware scan, flags, `stateVersion` |
 | `hosts/_template/` | Copy this to add a machine (`_` prefix = not a host) |
-| `home/` | **Mine** (home-manager): shell plugins, prompt, git identity, apps, default apps, dotfile links, auto-sync |
+| `home/` | **Mine** — standalone home-manager, applied by `hms` with **no sudo**: shell plugins, prompt, git identity, apps, default apps, dotfile links, `dsync` |
 | `dotfiles/` | mutable, git-tracked config — **never needs a rebuild** |
 
-### System vs mine
+### The machine vs me — and the sudo rule
 
-Orthogonal to the layers: **`modules/` is the machine, `home/` is me.**
-zsh being the login shell is a system fact (`modules/shell.nix`); starship,
-autosuggestions, fzf-tab, fzf, zoxide and direnv are my preferences and live
-in `home/shell.nix`. A second user on this machine gets a working zsh and
-none of my setup. Rule of thumb: if root or another user needs it, it's
-`modules/`; if it's about how *I* like to work, it's `home/`.
+Two halves, two commands:
+
+| | Where | Applied by | sudo |
+|---|---|---|---|
+| **the machine** | `configuration.nix`, `modules/`, `hosts/` | `nrs` — `sudo nixos-rebuild switch` | yes |
+| **me** | `home/` (home-manager, standalone) | `hms` — `home-manager switch` | **no** |
+| **my live files** | `dotfiles/` | nothing — saving the file applies it | no |
+
+**The rule, borrowed from Arch:** if on Arch it would need `sudo pacman` or
+`sudo systemctl enable`, it belongs to the machine and `sudo` is fine. If on
+Arch you would just edit a file in your home directory, it must never need
+`sudo` here — so it lives in `home/` or `dotfiles/`.
+
+So zsh *as the login shell* is the machine (`modules/shell.nix`), but
+starship, autosuggestions, fzf-tab, fzf, zoxide and direnv are me
+(`home/shell.nix`). A second user gets a working zsh and none of my setup.
+
+home-manager runs **standalone**, not as a NixOS module, precisely for the
+sudo rule: as a module every user-level change would go through
+`sudo nixos-rebuild`. `me.nix` is passed to both halves as `me`, so identity
+is still defined once.
 
 Two things are deliberately absent from the host layer: the **module list** (it
 is identical for every host, in `flake.nix`) and the **hostname** (derived from
@@ -115,18 +130,15 @@ declarative, the *contents* stay editable.
 | `dotfiles/niri/config.kdl` | keybinds, column widths, cursor | **instantly** (niri live-reloads) |
 | `dotfiles/ghostty/config` | terminal font, theme | on save |
 | `dotfiles/dms/settings.json` | everything in DMS Settings (`Mod+,`) | DMS writes it itself |
-| `dotfiles/vscode/` | VS Code settings, keybindings, extension list | VS Code writes it itself |
 
-The last two are written *by the apps*. DMS and VS Code write through the
-link, so clicking a setting is a repo change — verified for DMS.
+The last one is written *by the app*: DMS writes through the link (verified),
+so clicking a setting in DMS is a repo change.
 
 **Sync.** `dsync` (the `dotfiles-sync` command) commits whatever changed
 under `dotfiles/` and pushes to GitHub. Run it by hand — no timer. It only
 ever touches `dotfiles/` — Nix changes get a deliberate, hand-written commit.
 It refuses to publish anything that looks like a credential and notifies you
-instead, and rebases if another machine pushed first. `vscode/extensions.txt`
-is refreshed from `code --list-extensions` on every `dsync`; on a new machine a
-login service installs everything listed.
+instead, and rebases if another machine pushed first.
 
 ### Tier 3 — not in this repo at all
 
@@ -134,6 +146,10 @@ login service installs everything listed.
 
 - **Chrome** — the profile is SQLite databases, caches and encrypted
   cookies/passwords, rewritten constantly. Use Chrome Sync (Google account).
+- **VS Code** — settings, keybindings and extensions sync through VS Code's
+  own Settings Sync (sign in with GitHub). Tracking them here too would put
+  two syncs on the same files. The flake only installs VS Code and points it
+  at gnome-keyring so that sign-in works under niri.
 - GNOME dconf settings (fallback session only)
 - DMS-generated files: `~/.config/niri/dms/*.kdl`, the `dankcolors` Ghostty
   theme. Derived from `dms/settings.json` on every start, so tracking them
@@ -169,10 +185,10 @@ declarative; which font Ghostty uses lives in `dotfiles/ghostty/config`.
 
 ### A note on sudo
 
-Tier 1 needs `sudo` because it activates a system profile — that's inherent,
-not a Nix quirk. home-manager is wired in as a NixOS module, so adding a
-*user* package or plugin also goes through `nrs`. Tier 2 never does: the
-links point at the live repo, and the apps reload the files themselves.
+Only the machine half needs `sudo`, because it activates a system profile —
+inherent, not a Nix quirk. Everything of mine is applied by standalone
+home-manager as my user (`hms`), and `dotfiles/` needs no command at all:
+the links point at the live repo, and the apps reload the files themselves.
 
 ### When unsure
 
@@ -209,18 +225,31 @@ sudo nixos-rebuild switch --flake ~/nixos-config#gear
 
 At the GDM login screen pick **niri** (it's the default) or **GNOME** (fallback).
 
-The `dotfiles/` links are created by home-manager during the switch — no
-manual `ln -sf`. If the repo is not at `my.repo.path` yet (a fresh install
-that never cloned it), the `nixos-config-clone` user service clones it on
-first login and the links start resolving. Verify with:
+Then apply **me** — once, as your user, no sudo. The first time the
+`home-manager` command does not exist yet, so run it from the flake input;
+it installs itself, and from then on it is just `hms`:
+
+```bash
+nix run home-manager -- switch -b hm-bak --flake ~/nixos-config
+exec zsh          # pick up the new shell config
+```
+
+That creates the `dotfiles/` links — no manual `ln -sf`. A file already in a
+link's place is moved aside to `<file>.hm-bak`, never overwritten. Verify:
 
 ```bash
 ls -l ~/.config/niri/config.kdl ~/.config/dms/settings.json
-dsync        # commit + push anything changed under dotfiles/
 ```
 
-A file that was already in a link's place is moved aside to `<file>.hm-bak`,
-never overwritten.
+**Then the sign-ins** — state no config can (or should) contain:
+
+```bash
+gh auth login            # GitHub, then SSH key upload when asked
+sudo tailscale up        # opens a login URL
+```
+
+Chrome and VS Code: sign in inside the apps; their own sync restores
+bookmarks, extensions and settings.
 
 ## If niri doesn't come up
 
@@ -246,8 +275,8 @@ Install a stock system with the graphical ISO, boot in, then:
 export NIX_CONFIG="experimental-features = nix-command flakes"
 nix-shell -p git
 
-# Clone to my.repo.path (default ~/nixos-config, set in modules/user.nix):
-# every dotfile link points there. Skip this and the first login clones it.
+# Clone to repoPath from me.nix (default ~/nixos-config): every dotfile
+# link points there.
 git clone https://github.com/hjy1/nixos-config ~/nixos-config && cd ~/nixos-config
 
 mkdir -p hosts/<name>
@@ -263,9 +292,13 @@ $EDITOR hosts/<name>/default.nix
 # the directory name becomes the hostname.
 git add -A
 sudo nixos-rebuild switch --flake .#<name>
+
+# Then "me", as your user - no sudo (see Applying above):
+nix run home-manager -- switch -b hm-bak --flake ~/nixos-config
 ```
 
-The installer handles partitioning and your user password. Nothing else needed.
+The installer handles partitioning and your user password. After that, only
+the sign-ins in "Applying" remain.
 
 ### Declarative route: `nixos-anywhere`
 

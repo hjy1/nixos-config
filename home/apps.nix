@@ -4,9 +4,9 @@
 # share/applications/, not guessed - a wrong name here fails silently
 # (clicking a file just does nothing).
 #
-# App SETTINGS are not here. Those that keep plain config files (VS Code,
-# DMS) are linked into dotfiles/ by home/dotfiles.nix; Chrome syncs through
-# its own Google account (its profile is databases, not config).
+# App SETTINGS are not here. DMS's are linked into dotfiles/ by
+# home/dotfiles.nix. VS Code and Chrome sync themselves through their own
+# accounts (Settings Sync / Chrome Sync), so the repo stays out of their way.
 { pkgs, ... }:
 
 {

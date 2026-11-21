@@ -4,8 +4,9 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
 
-    # Per-user layer: your shell plugins, prompt, git identity, apps and the
-    # dotfile links. Follows nixpkgs so there is one package set, not two.
+    # Per-user layer, run STANDALONE: `hms` (home-manager switch) applies
+    # home/ as the user, no sudo. Follows nixpkgs so there is one package
+    # set, not two.
     home-manager = {
       url = "github:nix-community/home-manager";
       inputs.nixpkgs.follows = "nixpkgs";
@@ -21,6 +22,15 @@
     let
       system = "x86_64-linux";
       lib = nixpkgs.lib;
+
+      # Identity, shared by the system and home-manager. See me.nix.
+      me = import ./me.nix;
+
+      # One package set for home-manager and the devShell.
+      pkgs = import nixpkgs {
+        inherit system;
+        config.allowUnfree = true;
+      };
 
       # Every directory under ./hosts is a machine, except ones starting
       # with "_" (templates). Adding a machine means creating a directory -
@@ -38,12 +48,6 @@
       #   nix develop ~/nixos-config#cuda
       # or in a project:  echo 'use flake ~/nixos-config#cuda' > .envrc
       devShells.${system}.cuda =
-        let
-          pkgs = import nixpkgs {
-            inherit system;
-            config.allowUnfree = true;
-          };
-        in
         pkgs.mkShell {
           packages = with pkgs; [
             cudaPackages.cudatoolkit
@@ -63,7 +67,7 @@
       nixosConfigurations = lib.genAttrs hostNames (name:
         nixpkgs.lib.nixosSystem {
           inherit system;
-          specialArgs = { inherit inputs; };
+          specialArgs = { inherit inputs me; };
           modules = [
             disko.nixosModules.disko
 
@@ -73,12 +77,9 @@
             # machine's name. mkDefault, so a host can disagree if it must.
             { networking.hostName = lib.mkDefault name; }
 
-            # Who this is for - the only file with personal identity.
-            ./me.nix
-
             # Base layer - unconditional on every host.
             ./configuration.nix
-            ./modules/user.nix      # the account + home-manager (home/)
+            ./modules/user.nix      # the account (identity from me.nix)
             ./modules/maintenance.nix
 
             # Feature layer - imported everywhere, so every option below
@@ -100,5 +101,16 @@
           ];
         }
       );
+
+      # Everything that is about ME rather than the machine: shell plugins,
+      # prompt, git identity, apps, default apps, dotfile links. Applied as
+      # the user, no sudo:
+      #   hms   ==  home-manager switch --flake ~/nixos-config
+      # home-manager picks this attribute by $USER. Same on every host.
+      homeConfigurations.${me.name} = home-manager.lib.homeManagerConfiguration {
+        inherit pkgs;
+        extraSpecialArgs = { inherit me; };
+        modules = [ ./home ];
+      };
     };
 }

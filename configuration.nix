@@ -77,6 +77,7 @@
   };
 
   # The user account lives in modules/user.nix, built from me.nix.
+  # Everything else about the user is home-manager: home/, applied by `hms`.
 
   # vscode, nvidia drivers, steam, bilibili and CUDA are all unfree.
   nixpkgs.config.allowUnfree = true;

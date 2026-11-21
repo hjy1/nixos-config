@@ -9,7 +9,8 @@ checkout, not a read-only copy); it never reads or generates the contents.
 | Edit this | Effect |
 |---|---|
 | anything in `dotfiles/` | immediate — the app reloads it; `dsync` pushes it |
-| anything in `modules/`, `home/` or `configuration.nix` | needs `nrs` (sudo nixos-rebuild switch) |
+| anything in `home/` | `hms` (home-manager switch) — no sudo |
+| anything in `modules/`, `hosts/` or `configuration.nix` | `nrs` (sudo nixos-rebuild switch) |
 
 So: **no sudo, no rebuild.** Change it, save it, done. `dsync` commits and
 pushes everything changed here in one go.
@@ -18,9 +19,9 @@ pushes everything changed here in one go.
 
 - Cosmetics and anything mood-driven: prompt, aliases, keybinds, colours,
   font choices, padding, themes.
-- **Settings that apps write themselves through their own UI** — DMS
-  (`dms/settings.json`) and VS Code (`vscode/`). They write through the link,
-  so the repo is their save file.
+- **Settings an app writes itself through its own UI** — DMS
+  (`dms/settings.json`). It writes through the link, so the repo is its save
+  file.
 
 ## What does NOT go here
 
@@ -29,6 +30,7 @@ pushes everything changed here in one go.
 - **Assets** — wallpapers and other binaries. Git history is permanent; keep
   them in `~/Pictures/` and point apps at the path.
 - **Databases** — Chrome's profile, GNOME dconf. Use Chrome Sync.
+- **VS Code** — its own Settings Sync handles it; two syncs on one file fight.
 - **Secrets** — tokens, private keys. **This repo is public.** The sync
   refuses anything that looks like a credential and notifies you instead.
 
@@ -41,9 +43,6 @@ pushes everything changed here in one go.
 | `niri/config.kdl` | `~/.config/niri/config.kdl` | you |
 | `ghostty/config` | `~/.config/ghostty/config` | you |
 | `dms/settings.json` | `~/.config/dms/settings.json` | DMS Settings UI |
-| `vscode/settings.json` | `~/.config/Code/User/settings.json` | you / VS Code UI |
-| `vscode/keybindings.json` | `~/.config/Code/User/keybindings.json` | you / VS Code UI |
-| `vscode/extensions.txt` | — (captured by `dotfiles-sync`, restored at login) | the sync |
 
 Adding a file: put it here, add one line to `links` in `home/dotfiles.nix`,
-`nrs` once. After that it's edit-and-forget.
+`hms` once (no sudo). After that it's edit-and-forget.

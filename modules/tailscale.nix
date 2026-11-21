@@ -5,7 +5,7 @@
 # No auth key is declared here: this repo is public, and a key in the Nix
 # store is world-readable anyway. Use authKeyFile + sops-nix/agenix if a host
 # ever needs to join unattended.
-{ config, lib, ... }:
+{ config, lib, me, ... }:
 
 let
   cfg = config.my.tailscale;
@@ -24,7 +24,7 @@ in
       useRoutingFeatures = lib.mkDefault "client";
       # Let my user drive tailscale without sudo - DMS's Tailscale widget
       # talks to the daemon as the user, and needs this to do anything.
-      extraSetFlags = [ "--operator=${config.my.user.name}" ];
+      extraSetFlags = [ "--operator=${me.name}" ];
     };
   };
 }

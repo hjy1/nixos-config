@@ -14,11 +14,15 @@ alias la='eza -la --git --group-directories-first'
 alias lt='eza --tree --level=2'
 
 # This config. $NIXOS_REPO is set by home/dotfiles.nix from me.nix (the
-# fallback only matters before the first home-manager switch), so the
+# fallback only matters before the first `hms`), so the
 # checkout path is never hard-coded here. No `#<host>` needed: flake.nix
 # names every host after its directory.
+# nrs = the machine (sudo, like pacman/systemctl on Arch): modules/, hosts/
+# hms = me (no sudo, like editing ~ on Arch): home/  -  -b keeps a backup of
+#       any file that is in the way of a new link instead of failing.
 alias nrs='sudo nixos-rebuild switch --flake "${NIXOS_REPO:-$HOME/nixos-config}"'
 alias nrb='sudo nixos-rebuild build  --flake "${NIXOS_REPO:-$HOME/nixos-config}"'
+alias hms='home-manager switch -b hm-bak --flake "${NIXOS_REPO:-$HOME/nixos-config}"'
 alias nfu='cd "${NIXOS_REPO:-$HOME/nixos-config}" && nix flake update'
 alias ngc='sudo nix-collect-garbage --delete-older-than 30d'
 alias cfg='cd "${NIXOS_REPO:-$HOME/nixos-config}"'

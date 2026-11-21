@@ -6,7 +6,7 @@
 # Not flag-gated: every host so far is a workstation. The day a headless or
 # server host appears, give this module a my.desktop.enable flag exactly the
 # way modules/nvidia.nix does - do not go back to curating import lists.
-{ config, pkgs, lib, ... }:
+{ config, pkgs, lib, me, ... }:
 
 {
   # The nixpkgs niri module handles portals, gnome-keyring, the session
@@ -30,7 +30,7 @@
 
   # DDC/CI brightness for external monitors goes through /dev/i2c-*, which
   # hardware.i2c (enabled by the module above) gives to the i2c group.
-  users.users.${config.my.user.name}.extraGroups = [ "i2c" ];
+  users.users.${me.name}.extraGroups = [ "i2c" ];
 
   # Make Electron/Chromium apps run as native Wayland clients instead of
   # going through XWayland. Without this, VSCode and bilibili (both Electron)
