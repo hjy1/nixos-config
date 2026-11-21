@@ -17,6 +17,14 @@
     };
   };
 
+  # GitHub's SSH host key, so the first `git push` over SSH on a fresh
+  # machine doesn't die with "Host key verification failed" (a
+  # non-interactive push can't answer the trust-this-host prompt). Verified
+  # 2026-11-20 against `gh api meta` and the live server:
+  #   SHA256:+DiY3wvvV6TuJJhbpZisF/zLDA0zPMSvHdkr4UvCOqU
+  programs.ssh.knownHosts."github.com".publicKey =
+    "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl";
+
   programs.neovim = {
     enable = true;
     defaultEditor = true;
