@@ -14,7 +14,7 @@
 #   git.nix      git identity, gh
 #   apps.nix     my applications and default-app choices
 #   ghostty.nix  Ghostty package + service (settings: config/ghostty/config)
-#   config.nix   links every file in config/ into ~/.config; `dsync`
+#   config.nix   links every file in config/ into ~/.config
 { me, ... }:
 
 {

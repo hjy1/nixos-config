@@ -121,28 +121,33 @@ home-manager owns everything of mine, in two forms:
 ### A new app's config
 
 home-manager does not capture anything by itself — it manages exactly the
-files it is told about. Telling it is one command:
+files it is told about. To track one, move it into the mirror and switch:
 
 ```bash
-dtrack ~/.config/<app>/<file>
+mkdir -p ~/nixos-config/home/config/<app>
+mv ~/.config/<app>/<file> ~/nixos-config/home/config/<app>/
+cd ~/nixos-config && git add home/config/<app> && hms
 ```
 
-That moves the file into `home/config/<app>/<file>` and runs `hms`, which
-puts a link in its place. From then on it is edited normally and tracked.
-(Toolchains like JDKs or Rust are *tools*, not config: install them in
-`home/apps.nix`, or per project with a devShell + direnv.)
+`hms` puts a link where the file was; from then on it is edited normally.
+(`git add` is needed because flakes only see files git knows about.)
+Toolchains like JDKs or Rust are *tools*, not config: install them in
+`home/apps.nix`, or per project with a devShell + direnv.
 
-### Publishing: `dsync`
+### Publishing
 
-`dsync` commits everything changed under `home/config/` and pushes it — run
-it when you want your tweaks on GitHub. It refuses anything that looks like
-a credential (the repo is public) and rebases if another machine pushed
-first. Changes to `*.nix` get ordinary, hand-written commits.
+Plain git — the repo is the source of truth:
 
-It also repairs links first. Some apps save by *replacing* their file
-(write a temp file, rename it over the original), which turns the link
-into a plain file — the repo would silently stop seeing changes. `dsync`
-copies such a file back into the repo and restores the link.
+```bash
+cd ~/nixos-config && git diff        # what changed (the repo is public: look)
+git commit -am "..." && git push
+```
+
+One thing to know: some apps save by *replacing* their file (write a temp
+file, rename it over the original). That turns the link into a plain file,
+and the repo stops seeing changes. `ls -l ~/.config/<app>/<file>` shows
+which it is; to fix, copy the file over the one in `home/config/`, delete
+it from `~/.config`, and `hms`.
 
 DMS *generates* `~/.config/niri/dms/*.kdl` and a `dankcolors` Ghostty theme
 from its settings on every start. They are derived, so they are not tracked;
