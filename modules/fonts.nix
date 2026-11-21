@@ -5,8 +5,8 @@
 #   WHICH FONTS EXIST          -> here. A font that isn't installed cannot be
 #                                 selected, and missing glyphs are a broken
 #                                 system, not a style preference.
-#   WHICH FONT A THING USES    -> home/ (`hms`, no sudo). Terminal font and
-#                                 size are taste; see home/ghostty.nix.
+#   WHICH FONT A THING USES    -> home/config/ - live files, edited normally.
+#                                 See home/config/ghostty/config.
 { config, pkgs, ... }:
 
 {

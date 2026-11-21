@@ -30,7 +30,8 @@ Three layers, and every file belongs to exactly one.
 | `modules/tailscale.nix` | Tailscale client — `my.tailscale.enable`; once: `sudo tailscale up` |
 | `hosts/gear/` | This machine: hardware scan, flags, `stateVersion` |
 | `hosts/_template/` | Copy this to add a machine (`_` prefix = not a host) |
-| `home/` | **Mine** — standalone home-manager, applied by `hms` with **no sudo**: zsh, starship, git, apps, default apps, Ghostty, niri config, DMS settings |
+| `home/` | **Mine** — standalone home-manager, `hms` with **no sudo**: apps, zsh plugins, git, default apps |
+| `home/config/` | My config files, mirroring `~/.config` and linked live — edit them normally |
 
 ### The machine vs me — and the sudo rule
 
@@ -95,41 +96,57 @@ it in place.
 
 ## How a change is made
 
-home-manager owns every config file of mine. There is no separate dotfiles
-directory: to change anything, edit the matching file in `home/` and run
-`hms` (no sudo). The file in `~/.config` is a read-only copy home-manager
-generated, so it cannot drift from the repo — every change *is* a repo change.
+home-manager owns everything of mine, in two forms:
+
+- **`home/*.nix`** — what is installed and wired up: my apps, zsh plugins,
+  git identity, default apps. Change it, then `hms` (no sudo).
+- **`home/config/`** — my config files. It mirrors `~/.config`, and every
+  file in it is linked **live**: `~/.config/ghostty/config` *is*
+  `home/config/ghostty/config`. Edit it the normal way, at either path, in
+  any editor — it applies like on any other distro, and `git diff` already
+  shows the change. No command.
 
 | To change… | Edit | Then |
 |---|---|---|
-| Ghostty font, theme, padding | `home/ghostty.nix` | `hms`, then Ctrl+Shift+, in Ghostty |
-| prompt | `home/shell.nix` → `programs.starship.settings` | `hms` |
-| aliases, zsh plugins, history | `home/shell.nix` | `hms`, then `exec zsh` |
-| git identity, gh | `home/git.nix` (name/email come from `me.nix`) | `hms` |
+| Ghostty font, theme | `~/.config/ghostty/config` | Ctrl+Shift+, in Ghostty |
+| prompt | `~/.config/starship.toml` | nothing (next prompt) |
+| aliases, fzf-tab previews | `~/.config/zsh/local.zsh` | `exec zsh` |
+| niri keybinds, layout | `~/.config/niri/config.kdl` | nothing (niri reloads) |
+| DMS: wallpaper, bar, gaps, monitors | DMS Settings (`Mod+,`) | nothing — DMS saves through the link |
+| zsh plugins, history | `home/shell.nix` | `hms` |
+| git identity, gh | `home/git.nix` (name/email from `me.nix`) | `hms` |
 | my apps, default apps | `home/apps.nix` | `hms` |
-| niri keybinds, layout, cursor | `home/niri/config.kdl` | `hms` — niri reloads itself |
-| DMS: wallpaper, bar, gaps, colours, monitors | DMS Settings (`Mod+,`) | nothing — see below |
 | drivers, services, desktop, fonts, Tailscale | `modules/`, `hosts/` | `nrs` (sudo) |
 
-`hms` also validates before it touches anything: Ghostty's config is checked
-with `ghostty +validate-config` and niri's with `niri validate`, so a typo
-fails the switch instead of breaking the desktop.
+### A new app's config
 
-### The one exception: DMS settings
+home-manager does not capture anything by itself — it manages exactly the
+files it is told about. Telling it is one command:
 
-DMS saves its own settings whenever you click something in its Settings UI.
-A file home-manager generates is read-only, so DMS could not save. Instead
-`home/dms.nix` has home-manager *link* `~/.config/dms/settings.json` to the
-live file `home/dms/settings.json` in this repo (`mkOutOfStoreSymlink`). DMS
-writes through the link, so clicking a setting changes the repo.
+```bash
+dtrack ~/.config/<app>/<file>
+```
 
-**`dsync`** commits that file and pushes. It refuses anything that looks like
-a credential (the repo is public), and rebases if another machine pushed
-first. Run it when you've changed DMS settings you want to keep.
+That moves the file into `home/config/<app>/<file>` and runs `hms`, which
+puts a link in its place. From then on it is edited normally and tracked.
+(Toolchains like JDKs or Rust are *tools*, not config: install them in
+`home/apps.nix`, or per project with a devShell + direnv.)
 
-DMS also *generates* `~/.config/niri/dms/*.kdl` and a `dankcolors` Ghostty
-theme from those settings on every start. They are derived, so they are not
-tracked; `home/niri/config.kdl` pulls them in with `include optional=true`.
+### Publishing: `dsync`
+
+`dsync` commits everything changed under `home/config/` and pushes it — run
+it when you want your tweaks on GitHub. It refuses anything that looks like
+a credential (the repo is public) and rebases if another machine pushed
+first. Changes to `*.nix` get ordinary, hand-written commits.
+
+It also repairs links first. Some apps save by *replacing* their file
+(write a temp file, rename it over the original), which turns the link
+into a plain file — the repo would silently stop seeing changes. `dsync`
+copies such a file back into the repo and restores the link.
+
+DMS *generates* `~/.config/niri/dms/*.kdl` and a `dankcolors` Ghostty theme
+from its settings on every start. They are derived, so they are not tracked;
+`niri/config.kdl` pulls them in with `include optional=true`.
 
 ### Not in this repo at all
 
@@ -166,7 +183,7 @@ them read a plain mutable file.
 
 The same split applies to themes: **installing** an icon theme, cursor theme
 or font is the machine (`modules/fonts.nix`, `nrs`); **choosing** which one
-Ghostty or niri uses is mine (`home/`, `hms`).
+Ghostty or niri uses is mine (`home/config/`, no command).
 
 ## Applying
 

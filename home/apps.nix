@@ -4,7 +4,7 @@
 # share/applications/, not guessed - a wrong name here fails silently
 # (clicking a file just does nothing).
 #
-# Settings for Ghostty, niri and DMS have their own files in home/. VS Code
+# Settings for Ghostty, niri and DMS are live files in home/config/. VS Code
 # and Chrome sync themselves through their own accounts (Settings Sync /
 # Chrome Sync), so the repo stays out of their way.
 { pkgs, ... }:

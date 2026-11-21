@@ -5,14 +5,16 @@
 # `sudo pacman` / `systemctl enable`, it is the machine (modules/, `nrs`).
 # If on Arch you would just edit a file in your home directory, it is here.
 #
-# home-manager owns every config file of mine. Edit here, `hms`.
+# Two kinds of thing, both owned by home-manager:
+#   *.nix        what is installed and wired up - change, then `hms`
+#   config/      my config files, mirroring ~/.config. Linked LIVE, so you
+#                edit ~/.config/<x> normally and the repo already has it.
 #
-#   shell.nix    zsh: plugins, aliases, history; starship, fzf, zoxide, direnv
+#   shell.nix    zsh plugins + history; starship, fzf, zoxide, direnv
 #   git.nix      git identity, gh
 #   apps.nix     my applications and default-app choices
-#   ghostty.nix  terminal settings
-#   niri.nix     installs niri/config.kdl (validated)
-#   dms.nix      DMS settings - the one live, app-written file - and `dsync`
+#   ghostty.nix  Ghostty package + service (settings: config/ghostty/config)
+#   config.nix   links every file in config/ into ~/.config; `dsync`
 { me, ... }:
 
 {
@@ -21,8 +23,7 @@
     ./git.nix
     ./apps.nix
     ./ghostty.nix
-    ./niri.nix
-    ./dms.nix
+    ./config.nix
   ];
 
   # The repo path, for the nrs/hms aliases and scripts.

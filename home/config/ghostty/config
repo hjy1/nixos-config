@@ -1,0 +1,29 @@
+# Ghostty. This IS ~/.config/ghostty/config (home-manager links it here), so
+# edit either path - same file, already in the repo. No command needed: press
+# Ctrl+Shift+, in Ghostty to reload, or open a new window.
+#
+# Full reference: `ghostty +show-config --default --docs`
+
+font-family = JetBrainsMono Nerd Font
+font-size = 11
+
+# Built-in themes: `ghostty +list-themes`. Names are exact and
+# case-sensitive ("Catppuccin Mocha", not "catppuccin-mocha" - the wrong
+# spelling pops a "Configuration Errors" dialog on every launch).
+# `theme = dankcolors` follows the DMS wallpaper palette instead; DMS
+# regenerates ~/.config/ghostty/themes/dankcolors when the wallpaper changes.
+theme = Catppuccin Mocha
+
+background-opacity = 0.95
+window-padding-x = 8
+window-padding-y = 8
+window-decoration = none
+
+cursor-style = block
+mouse-hide-while-typing = true
+
+scrollback-limit = 10000
+copy-on-select = clipboard
+
+# niri handles window management; don't let ghostty confirm on close.
+confirm-close-surface = false
